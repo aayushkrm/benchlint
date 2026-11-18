@@ -89,6 +89,17 @@ class CheckConfig(BaseModel):
     canary: bool = False
 
 
+class AuditSpec(BaseModel):
+    """Top-level audit file: a dataset plus the checks to run on it.
+
+    This is what ``benchlint audit spec.yaml`` loads (DECISION update: DatasetSpec alone has no
+    place for check settings). YAML layout: ``dataset:`` (a DatasetSpec) and optional ``checks:``.
+    """
+
+    dataset: DatasetSpec
+    checks: CheckConfig = Field(default_factory=CheckConfig)
+
+
 class Record(BaseModel):
     """One row of a split, after loading."""
 
