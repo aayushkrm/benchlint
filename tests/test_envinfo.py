@@ -19,6 +19,8 @@ SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "envinfo.py"
 EXPECTED_KEYS = {
     "git_sha",
     "git_dirty",
+    "git_dirty_paths",
+    "git_diff_sha256",
     "utc_time",
     "cpu_model",
     "cpu_flags",
@@ -96,3 +98,23 @@ def test_output_omits_hostname_username_and_paths(envinfo_stdout: str) -> None:
     for secret in (socket.gethostname(), getpass.getuser()):
         if len(secret) >= 4:
             assert secret not in envinfo_stdout
+
+
+def test_git_provenance_fields_have_the_expected_types(envinfo: dict[str, Any]) -> None:
+    assert envinfo["git_dirty"] in (True, False, None)
+    paths = envinfo["git_dirty_paths"]
+    assert paths is None or (isinstance(paths, list) and all(isinstance(p, str) for p in paths))
+    digest = envinfo["git_diff_sha256"]
+    assert digest is None or re.fullmatch(r"[0-9a-f]{64}", digest)
+
+
+def test_results_are_never_listed_as_dirty(envinfo: dict[str, Any]) -> None:
+    """Run outputs under results/ do not make a tree dirty (see scripts/envinfo.py)."""
+    for path in envinfo["git_dirty_paths"] or []:
+        assert not path.startswith("results/"), path
+
+
+def test_dirty_flag_matches_dirty_paths(envinfo: dict[str, Any]) -> None:
+    if envinfo["git_dirty_paths"] is None:
+        pytest.skip("git is unavailable")
+    assert envinfo["git_dirty"] == bool(envinfo["git_dirty_paths"])

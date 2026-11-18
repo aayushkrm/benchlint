@@ -48,7 +48,7 @@ EXPERIMENTS: dict[str, dict[str, Any]] = {
         "spec": "specs/snli.yaml",
         "train": "train",
         "test": "test",
-        "label": "SNLI hypothesis-only accuracy",
+        "label": "SNLI test hypothesis-only accuracy",
         "reported": 0.67,
     },
     "mnli": {
@@ -56,7 +56,7 @@ EXPERIMENTS: dict[str, dict[str, Any]] = {
         "train": "train",
         "test": "validation",
         "label": "MNLI matched dev hypothesis-only accuracy",
-        "reported": 0.53,
+        "reported": 0.539,
     },
 }
 SMOKE_CAP = 300

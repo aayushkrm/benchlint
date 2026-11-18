@@ -9,6 +9,7 @@ those identify the person. This file is copied per repo and has no cross-repo de
 
 from __future__ import annotations
 
+import hashlib
 import importlib.metadata
 import json
 import os
@@ -65,12 +66,58 @@ def git_sha() -> str | None:
     return _run(["git", "-C", str(REPO_DIR), "rev-parse", "HEAD"])
 
 
-def git_dirty() -> bool | None:
-    """True if the working tree has uncommitted changes, None if git is unavailable."""
-    status = _run(["git", "-C", str(REPO_DIR), "status", "--porcelain"])
-    if status is None:
+# Run outputs live under results/ and are excluded from the dirty check: a run writes there, so
+# counting them would make every result dirty. Code, specs, docs and scripts are what counts.
+_EXCLUDED = (".", ":(exclude)results")
+
+
+def _run_raw(cmd: list[str]) -> str | None:
+    """Like _run, but keeps the output exactly (leading spaces in git status are meaningful)."""
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=10, check=False)
+    except (OSError, subprocess.SubprocessError):
         return None
-    return status != ""
+    if proc.returncode != 0:
+        return None
+    return proc.stdout
+
+
+def git_dirty_paths() -> list[str] | None:
+    """Sorted paths with uncommitted changes outside results/, or None if git is unavailable."""
+    out = _run_raw(["git", "-C", str(REPO_DIR), "status", "--porcelain", "--", *_EXCLUDED])
+    if out is None:
+        return None
+    paths = {line[3:] for line in out.splitlines() if line.strip()}
+    return sorted(paths)
+
+
+def git_dirty() -> bool | None:
+    """True if code, specs, scripts or docs have uncommitted changes (results/ excluded).
+
+    None if git is unavailable. Before this change the check also counted results/, so a run
+    that wrote its own outputs was recorded as dirty even on a clean tree.
+    """
+    paths = git_dirty_paths()
+    if paths is None:
+        return None
+    return bool(paths)
+
+
+def git_diff_sha256() -> str | None:
+    """SHA-256 of the uncommitted code diff plus the untracked code files (results/ excluded).
+
+    Two runs with the same value were made from the same code tree, so the value identifies the
+    working tree a result came from. None if git is unavailable; a clean tree gives the hash of
+    empty input.
+    """
+    diff = _run_raw(["git", "-C", str(REPO_DIR), "diff", "HEAD", "--", *_EXCLUDED])
+    untracked = _run_raw(
+        ["git", "-C", str(REPO_DIR), "ls-files", "--others", "--exclude-standard", "--", *_EXCLUDED]
+    )
+    if diff is None or untracked is None:
+        return None
+    payload = diff + "\n--untracked--\n" + "\n".join(sorted(untracked.splitlines())) + "\n"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def cpu_model() -> str | None:
@@ -152,6 +199,8 @@ def collect() -> dict[str, Any]:
     return {
         "git_sha": git_sha(),
         "git_dirty": git_dirty(),
+        "git_dirty_paths": git_dirty_paths(),
+        "git_diff_sha256": git_diff_sha256(),
         "utc_time": datetime.now(UTC).isoformat(timespec="seconds"),
         "cpu_model": cpu_model(),
         "cpu_flags": cpu_flags(),
