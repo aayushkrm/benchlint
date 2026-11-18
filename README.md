@@ -273,6 +273,7 @@ make results          # the full queue: E1, E2, E3 (network and CPU heavy; not r
 make report           # render results into this README
 make check-results    # CI gate: fails if the README is out of date
 make site             # static GitHub Pages site in site/dist
+# make report also writes results/headline.json: the numbers the portfolio hub may quote, formatted from results only.
 ```
 
 The experiment scripts take `--smoke` for a small check that finishes in about a minute; smoke output goes to a temporary folder and is never rendered. The settings are in `docs/prereg.md`, and every change to them is in `docs/deviations.md`.

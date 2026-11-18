@@ -28,6 +28,7 @@ from benchlint.experiments import (  # noqa: E402
     load_full,
     read_json,
 )
+from benchlint.headline import build_headline, headline_text  # noqa: E402
 
 START = "<!-- results:start -->"
 END = "<!-- results:end -->"
@@ -84,26 +85,47 @@ def splice(text: str, blocks: list[str]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Write the rendered blocks into the README, or with --check compare and exit 1."""
-    parser = argparse.ArgumentParser(description="Render results into README.md.")
-    parser.add_argument("--check", action="store_true", help="fail if README.md is out of date")
+    """Write the README blocks and results/headline.json, or with --check compare and exit 1.
+
+    The headline is built from the same results and validated against
+    schemas/headline.schema.json before it is written or compared.
+    """
+    parser = argparse.ArgumentParser(description="Render results into README.md and headline.json.")
+    parser.add_argument("--check", action="store_true", help="fail if a rendered file is stale")
     parser.add_argument("--readme", type=Path, default=REPO_ROOT / "README.md")
     parser.add_argument("--results", type=Path, default=RESULTS_DIR)
+    parser.add_argument(
+        "--headline", action="store_true", help="write or check results/headline.json only"
+    )
     args = parser.parse_args(argv)
 
-    current = args.readme.read_text(encoding="utf-8")
-    rendered = splice(current, render_blocks(args.results))
+    headline_path = args.results / "headline.json"
+    headline_new = headline_text(build_headline(args.results))
+    current: str | None = None
+    readme_new: str | None = None
+    if not args.headline:
+        current = args.readme.read_text(encoding="utf-8")
+        readme_new = splice(current, render_blocks(args.results))
     if args.check:
-        if rendered != current:
+        stale: list[str] = []
+        if readme_new is not None and readme_new != current:
+            stale.append(str(args.readme))
+        on_disk = headline_path.read_text(encoding="utf-8") if headline_path.is_file() else None
+        if on_disk != headline_new:
+            stale.append(str(headline_path))
+        if stale:
+            names = ", ".join(stale)
             print(
-                f"{args.readme} is out of date with results/: run `make report` and commit.",
-                file=sys.stderr,
+                f"out of date with results/: {names}. Run make report and commit.", file=sys.stderr
             )
             return 1
-        print("results blocks are up to date", file=sys.stderr)
+        print("results blocks and headline are up to date", file=sys.stderr)
         return 0
-    args.readme.write_text(rendered, encoding="utf-8")
-    print(f"wrote results blocks to {args.readme}", file=sys.stderr)
+    headline_path.parent.mkdir(parents=True, exist_ok=True)
+    headline_path.write_text(headline_new, encoding="utf-8")
+    if readme_new is not None:
+        args.readme.write_text(readme_new, encoding="utf-8")
+    print(f"wrote {headline_path}", file=sys.stderr)
     return 0
 
 
