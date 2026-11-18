@@ -1,0 +1,468 @@
+{
+  "schema_version": "1",
+  "dataset": "mbpp-vs-humaneval",
+  "spec": {
+    "name": "mbpp-vs-humaneval",
+    "source": {
+      "kind": "hf",
+      "id_or_path": "google-research-datasets/mbpp",
+      "config": "full",
+      "revision": null,
+      "split_map": {
+        "train": "train",
+        "test": "test"
+      }
+    },
+    "text_fields": [
+      "text",
+      "code"
+    ],
+    "label_field": null,
+    "id_field": "task_id",
+    "max_rows_per_split": null,
+    "seed": 0,
+    "drop_label_values": []
+  },
+  "findings": [
+    {
+      "check": "exact",
+      "severity": "info",
+      "splits": [
+        "train"
+      ],
+      "count": 0,
+      "denominator": 374,
+      "rate": 0.0,
+      "examples": [],
+      "details": {
+        "scope": "within",
+        "pairs": [],
+        "pairs_truncated": false,
+        "n_groups": 0,
+        "largest_group": 0,
+        "skipped_empty": 0,
+        "mask_numbers": false,
+        "key_method": "blake2b-128 over per-field NFKC/casefold/punct-strip/whitespace-collapse",
+        "rate_ci_low": 0.0,
+        "rate_ci_high": 0.010167
+      }
+    },
+    {
+      "check": "exact",
+      "severity": "info",
+      "splits": [
+        "test"
+      ],
+      "count": 0,
+      "denominator": 500,
+      "rate": 0.0,
+      "examples": [],
+      "details": {
+        "scope": "within",
+        "pairs": [],
+        "pairs_truncated": false,
+        "n_groups": 0,
+        "largest_group": 0,
+        "skipped_empty": 0,
+        "mask_numbers": false,
+        "key_method": "blake2b-128 over per-field NFKC/casefold/punct-strip/whitespace-collapse",
+        "rate_ci_low": 0.0,
+        "rate_ci_high": 0.007624
+      }
+    },
+    {
+      "check": "exact",
+      "severity": "medium",
+      "splits": [
+        "train",
+        "test"
+      ],
+      "count": 1,
+      "denominator": 500,
+      "rate": 0.002,
+      "examples": [
+        {
+          "a_id": "704",
+          "b_id": "248",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Write a function to calculate the harmonic sum of n-1. | def harmonic_sum(n):\r\n  if n < 2:\r\n    return 1\r\n  else:\r\n    return 1 / n + (harmonic_sum(n - 1))",
+          "b_text": "Write a function to calculate the harmonic sum of n-1. | def harmonic_sum(n):\r\n  if n < 2:\r\n    return 1\r\n  else:\r\n    return 1 / n + (harmonic_sum(n - 1)) "
+        }
+      ],
+      "details": {
+        "scope": "cross",
+        "pairs": [
+          [
+            "704",
+            "248",
+            1.0
+          ]
+        ],
+        "pairs_truncated": false,
+        "measured_split": "test",
+        "reference_split": "train",
+        "reverse_count": 1,
+        "reverse_denominator": 374,
+        "reverse_rate": 0.00267379679144385,
+        "mask_numbers": false,
+        "key_method": "blake2b-128 over per-field NFKC/casefold/punct-strip/whitespace-collapse",
+        "rate_ci_low": 0.000353,
+        "rate_ci_high": 0.011241
+      }
+    },
+    {
+      "check": "near",
+      "severity": "medium",
+      "splits": [
+        "test",
+        "train"
+      ],
+      "count": 2,
+      "denominator": 874,
+      "rate": 0.002288329519450801,
+      "examples": [
+        {
+          "a_id": "704",
+          "b_id": "248",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Write a function to calculate the harmonic sum of n-1. def harmonic_sum(n):\r\n  if n < 2:\r\n    return 1\r\n  else:\r\n    return 1 / n + (harmonic_sum(n - 1))",
+          "b_text": "Write a function to calculate the harmonic sum of n-1. def harmonic_sum(n):\r\n  if n < 2:\r\n    return 1\r\n  else:\r\n    return 1 / n + (harmonic_sum(n - 1)) "
+        }
+      ],
+      "details": {
+        "scope": "cross_split",
+        "threshold": 0.8,
+        "lsh_threshold": 0.7,
+        "num_perm": 128,
+        "shingle": 5,
+        "seed": 0,
+        "n_records": 874,
+        "n_evaluable": 874,
+        "n_candidate_pairs": 5,
+        "n_near_pairs": 1,
+        "n_candidate_pairs_below_threshold": 4,
+        "jaccard_histogram": {
+          "bin_edges": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            2,
+            0,
+            0,
+            1
+          ]
+        },
+        "flagged_by_split": {
+          "test": 1,
+          "train": 1
+        },
+        "near_pairs_by_split_pair": {
+          "test|train": 1
+        },
+        "pairs": [
+          [
+            "704",
+            "248",
+            1.0
+          ]
+        ],
+        "pairs_listed": 1,
+        "pairs_truncated": false,
+        "note": "rate is flagged items / evaluable items; the Jaccard histogram covers LSH candidate pairs of this scope, each verified by exact Jaccard; pairs lists near-duplicate pairs [a_id, b_id, jaccard] with jaccard at or above the threshold",
+        "rate_ci_low": 0.000628,
+        "rate_ci_high": 0.008305
+      }
+    },
+    {
+      "check": "near",
+      "severity": "info",
+      "splits": [
+        "test",
+        "train"
+      ],
+      "count": 0,
+      "denominator": 874,
+      "rate": 0.0,
+      "examples": [],
+      "details": {
+        "scope": "within_split",
+        "threshold": 0.8,
+        "lsh_threshold": 0.7,
+        "num_perm": 128,
+        "shingle": 5,
+        "seed": 0,
+        "n_records": 874,
+        "n_evaluable": 874,
+        "n_candidate_pairs": 4,
+        "n_near_pairs": 0,
+        "n_candidate_pairs_below_threshold": 4,
+        "jaccard_histogram": {
+          "bin_edges": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            3,
+            0,
+            0
+          ]
+        },
+        "flagged_by_split": {
+          "test": 0,
+          "train": 0
+        },
+        "near_pairs_by_split_pair": {},
+        "pairs": [],
+        "pairs_listed": 0,
+        "pairs_truncated": false,
+        "note": "rate is flagged items / evaluable items; the Jaccard histogram covers LSH candidate pairs of this scope, each verified by exact Jaccard; pairs lists near-duplicate pairs [a_id, b_id, jaccard] with jaccard at or above the threshold",
+        "rate_ci_low": 0.0,
+        "rate_ci_high": 0.004376
+      }
+    },
+    {
+      "check": "ngram",
+      "severity": "info",
+      "splits": [
+        "test"
+      ],
+      "count": 0,
+      "denominator": 500,
+      "rate": 0.0,
+      "examples": [],
+      "details": {
+        "n": 13,
+        "n_eval_items": 500,
+        "n_items_evaluable": 500,
+        "n_items_too_short": 0,
+        "n_reference_texts": 164,
+        "n_reference_ngrams": 10406,
+        "counts_at_fraction": {
+          "any": 0,
+          "ge_0.5": 0,
+          "ge_0.8": 0,
+          "ge_1.0": 0
+        },
+        "fraction_histogram": {
+          "bin_edges": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "counts": [
+            500,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "mean_fraction": 0.0,
+        "rate_ci_low": 0.0,
+        "rate_ci_high": 0.007624
+      }
+    }
+  ],
+  "shortcuts": [],
+  "env_info": {
+    "git_sha": "b0eddc1f07ed6d9abb9b5abd6f089f791f948f5d",
+    "git_dirty": true,
+    "utc_time": "2026-11-18T20:44:18+00:00",
+    "cpu_model": "Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz",
+    "cpu_flags": [
+      "ACPI",
+      "AES",
+      "APIC",
+      "AVX1.0",
+      "AVX2",
+      "BMI1",
+      "BMI2",
+      "CLFSH",
+      "CMOV",
+      "CX16",
+      "CX8",
+      "DE",
+      "DS",
+      "DSCPL",
+      "DTES64",
+      "ERMS",
+      "EST",
+      "F16C",
+      "FMA",
+      "FPU",
+      "FPU_CSDS",
+      "FXSR",
+      "HTT",
+      "IBRS",
+      "INVPCID",
+      "L1DF",
+      "MCA",
+      "MCE",
+      "MDCLEAR",
+      "MMX",
+      "MON",
+      "MOVBE",
+      "MSR",
+      "MTRR",
+      "OSXSAVE",
+      "PAE",
+      "PAT",
+      "PBE",
+      "PCID",
+      "PCLMULQDQ",
+      "PDCM",
+      "PGE",
+      "POPCNT",
+      "PSE",
+      "PSE36",
+      "RDRAND",
+      "RDWRFSGS",
+      "SEGLIM64",
+      "SEP",
+      "SMEP",
+      "SS",
+      "SSBD",
+      "SSE",
+      "SSE2",
+      "SSE3",
+      "SSE4.1",
+      "SSE4.2",
+      "SSSE3",
+      "STIBP",
+      "TM",
+      "TM2",
+      "TPR",
+      "TSC",
+      "TSCTMR",
+      "TSC_THREAD_OFFSET",
+      "VME",
+      "VMX",
+      "X2APIC",
+      "XSAVE"
+    ],
+    "cores_physical": 4,
+    "cores_logical": 8,
+    "ram_bytes": 17179869184,
+    "os_name": "Darwin",
+    "os_version": "14.8.9",
+    "machine": "x86_64",
+    "python_version": "3.11.15",
+    "packages": {
+      "benchlint": "0.1.0",
+      "pydantic": "2.14.3",
+      "typer": "0.29.2",
+      "numpy": "2.4.6",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "scikit-learn": "1.9.1",
+      "datasketch": "2.0.0",
+      "datasets": "5.2.0",
+      "huggingface_hub": "2.4.0"
+    },
+    "checks": {
+      "exact": true,
+      "near": {
+        "threshold": 0.8,
+        "num_perm": 128,
+        "shingle": 5,
+        "lsh_threshold": 0.7
+      },
+      "ngram": {
+        "n": 13,
+        "reference": [
+          {
+            "kind": "hf",
+            "id_or_path": "openai/openai_humaneval",
+            "config": null,
+            "revision": null,
+            "split_map": {
+              "test": "test"
+            }
+          }
+        ],
+        "reference_fields": [
+          "prompt"
+        ]
+      },
+      "labels": false,
+      "shortcut": {
+        "views": [],
+        "margin_pts": 10.0,
+        "n_boot": 1000,
+        "n_perm": 200,
+        "max_rows": 20000
+      },
+      "canary": false
+    },
+    "data_splits": [
+      {
+        "split": "train",
+        "source_split": "train",
+        "backend": "hf-datasets",
+        "source_rows": 374,
+        "kept_rows": 374,
+        "sampled": false,
+        "dropped_by_label": 0
+      },
+      {
+        "split": "test",
+        "source_split": "test",
+        "backend": "hf-datasets",
+        "source_rows": 500,
+        "kept_rows": 500,
+        "sampled": false,
+        "dropped_by_label": 0
+      }
+    ]
+  },
+  "runtime_s": 18.062
+}

@@ -167,7 +167,61 @@ Cells with fewer than 20 planted pairs are marked low n. Bins are word-count ter
 ## Findings on public benchmarks (E2 and E3)
 
 <!-- results:start -->
-_No results yet. The experiments have not been run in full: `make results`, then `make report`._
+Source: `results/e2/*.json` and `results/e3/summary.json` (full mode, git `6172c97baf`). Environment in `results/e2/env.json` and `results/e3/env.json`.
+
+### E2 hypothesis-only accuracy against reported literature
+
+| Dataset | Eval items | Train items | Accuracy [95% CI] | Majority baseline | Literature (reported) | Gap (points) | Flagged |
+|---|---|---|---|---|---|---|---|
+| snli | 9824 | 100000 | 64.4% [63.5%, 65.4%] | 32.8% | 67% (reported) | -2.6 | yes |
+| mnli | 9815 | 100000 | 51.9% [50.9%, 52.9%] | 31.8% | 53% (reported) | -1.1 | yes |
+
+Literature values: Gururangan et al. (2018), Annotation Artifacts in Natural Language Inference Data, NAACL. They are cited, not our measurements. Our classifier is TF-IDF with logistic regression, not the models of the cited paper, so this tests the size of a shortcut, not a replication.
+
+### E3 leakage scan
+
+| Dataset | Check | Severity | Count / n | Rate [95% CI] |
+|---|---|---|---|---|
+| gsm8k | exact | info | 0 / 7473 | 0.0% [0.0%, 0.1%] |
+| gsm8k | exact | info | 0 / 1319 | 0.0% [0.0%, 0.3%] |
+| gsm8k | exact | info | 0 / 1319 | 0.0% [0.0%, 0.3%] |
+| gsm8k | near | info | 0 / 8792 | 0.0% [0.0%, 0.0%] |
+| gsm8k | near | info | 0 / 8792 | 0.0% [0.0%, 0.0%] |
+| arc-easy | exact | low | 6 / 2251 | 0.3% [0.1%, 0.6%] |
+| arc-easy | exact | low | 5 / 2376 | 0.2% [0.1%, 0.5%] |
+| arc-easy | exact | medium | 7 / 2376 | 0.3% [0.1%, 0.6%] |
+| arc-easy | near | medium | 19 / 4627 | 0.4% [0.3%, 0.6%] |
+| arc-easy | near | medium | 27 / 4627 | 0.6% [0.4%, 0.8%] |
+| arc-easy | labels | medium | 24 / 4627 | 0.5% [0.3%, 0.8%] |
+| ag-news | exact | low | 227 / 120000 | 0.2% [0.2%, 0.2%] |
+| ag-news | exact | low | 1 / 7600 | 0.0% [0.0%, 0.1%] |
+| ag-news | exact | medium | 17 / 7600 | 0.2% [0.1%, 0.4%] |
+| ag-news | near | medium | 208 / 127600 | 0.2% [0.1%, 0.2%] |
+| ag-news | near | medium | 1850 / 127600 | 1.4% [1.4%, 1.5%] |
+| ag-news | labels | medium | 202 / 127600 | 0.2% [0.1%, 0.2%] |
+| imdb | exact | low | 96 / 25000 | 0.4% [0.3%, 0.5%] |
+| imdb | exact | low | 199 / 25000 | 0.8% [0.7%, 0.9%] |
+| imdb | exact | medium | 123 / 25000 | 0.5% [0.4%, 0.6%] |
+| imdb | near | medium | 246 / 50000 | 0.5% [0.4%, 0.6%] |
+| imdb | near | medium | 635 / 50000 | 1.3% [1.2%, 1.4%] |
+| imdb | labels | info | 0 / 50000 | 0.0% [0.0%, 0.0%] |
+| snli | exact | low | 32 / 100000 | 0.0% [0.0%, 0.0%] |
+| snli | exact | low | 2 / 9842 | 0.0% [0.0%, 0.1%] |
+| snli | exact | info | 0 / 9824 | 0.0% [0.0%, 0.0%] |
+| snli | exact | info | 0 / 9842 | 0.0% [0.0%, 0.0%] |
+| snli | exact | info | 0 / 9824 | 0.0% [0.0%, 0.0%] |
+| snli | exact | info | 0 / 9824 | 0.0% [0.0%, 0.0%] |
+| snli | near | info | 0 / 119666 | 0.0% [0.0%, 0.0%] |
+| snli | near | medium | 3403 / 119666 | 2.8% [2.8%, 2.9%] |
+| snli | labels | high | 3133 / 119666 | 2.6% [2.5%, 2.7%] |
+| mbpp-vs-humaneval | exact | info | 0 / 374 | 0.0% [0.0%, 1.0%] |
+| mbpp-vs-humaneval | exact | info | 0 / 500 | 0.0% [0.0%, 0.8%] |
+| mbpp-vs-humaneval | exact | medium | 1 / 500 | 0.2% [0.0%, 1.1%] |
+| mbpp-vs-humaneval | near | medium | 2 / 874 | 0.2% [0.1%, 0.8%] |
+| mbpp-vs-humaneval | near | info | 0 / 874 | 0.0% [0.0%, 0.4%] |
+| mbpp-vs-humaneval | ngram | info | 0 / 500 | 0.0% [0.0%, 0.8%] |
+
+A finding means the lexical check matched. Shared templates can match without contamination. Example pairs are in `results/e3/`.
 <!-- results:end -->
 
 Literature values in E2 are cited as reported; they are not our measurements. Each rate in E3 is a count of matched items, not a claim about the benchmark's validity.

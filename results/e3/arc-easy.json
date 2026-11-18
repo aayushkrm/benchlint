@@ -1,0 +1,971 @@
+{
+  "schema_version": "1",
+  "dataset": "arc-easy",
+  "spec": {
+    "name": "arc-easy",
+    "source": {
+      "kind": "hf",
+      "id_or_path": "allenai/ai2_arc",
+      "config": "ARC-Easy",
+      "revision": null,
+      "split_map": {
+        "train": "train",
+        "test": "test"
+      }
+    },
+    "text_fields": [
+      "question"
+    ],
+    "label_field": "answerKey",
+    "id_field": "id",
+    "max_rows_per_split": null,
+    "seed": 0,
+    "drop_label_values": []
+  },
+  "findings": [
+    {
+      "check": "exact",
+      "severity": "low",
+      "splits": [
+        "train"
+      ],
+      "count": 6,
+      "denominator": 2251,
+      "rate": 0.0026654820079964462,
+      "examples": [
+        {
+          "a_id": "TIMSS_1995_8_J4",
+          "b_id": "AIMS_2009_8_11",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "Which is an example of a chemical reaction?",
+          "b_text": "Which is an example of a chemical reaction?"
+        },
+        {
+          "a_id": "TIMSS_1995_8_J4",
+          "b_id": "Mercury_407660",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "Which is an example of a chemical reaction?",
+          "b_text": "Which is an example of a chemical reaction?"
+        },
+        {
+          "a_id": "MCAS_2000_8_4",
+          "b_id": "Mercury_7135870",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "Which is an example of a chemical change?",
+          "b_text": "Which is an example of a chemical change?"
+        },
+        {
+          "a_id": "NYSEDREGENTS_2007_4_30",
+          "b_id": "NYSEDREGENTS_2011_4_25",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "A decomposer is an organism that",
+          "b_text": "A decomposer is an organism that"
+        },
+        {
+          "a_id": "NYSEDREGENTS_2011_4_26",
+          "b_id": "Mercury_7008365",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "What is the main source of energy for the water cycle?",
+          "b_text": "What is the main source of energy for the water cycle?"
+        }
+      ],
+      "details": {
+        "scope": "within",
+        "pairs": [
+          [
+            "TIMSS_1995_8_J4",
+            "AIMS_2009_8_11",
+            1.0
+          ],
+          [
+            "TIMSS_1995_8_J4",
+            "Mercury_407660",
+            1.0
+          ],
+          [
+            "MCAS_2000_8_4",
+            "Mercury_7135870",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2007_4_30",
+            "NYSEDREGENTS_2011_4_25",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2011_4_26",
+            "Mercury_7008365",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2006_4_9",
+            "NYSEDREGENTS_2004_4_6",
+            1.0
+          ]
+        ],
+        "pairs_truncated": false,
+        "n_groups": 5,
+        "largest_group": 3,
+        "skipped_empty": 0,
+        "mask_numbers": false,
+        "key_method": "blake2b-128 over per-field NFKC/casefold/punct-strip/whitespace-collapse",
+        "rate_ci_low": 0.001222,
+        "rate_ci_high": 0.005803
+      }
+    },
+    {
+      "check": "exact",
+      "severity": "low",
+      "splits": [
+        "test"
+      ],
+      "count": 5,
+      "denominator": 2376,
+      "rate": 0.0021043771043771043,
+      "examples": [
+        {
+          "a_id": "LEAP_2005_4_10267",
+          "b_id": "LEAP__4_10227",
+          "a_split": "test",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "A wetland was drained to build a mall. Two years later, there were no more toads in that area. Why did the toads disappear?",
+          "b_text": "A wetland was drained to build a mall. Two years later, there were no more toads in that area. Why did the toads disappear?"
+        },
+        {
+          "a_id": "NAEP_2009_4_S11+1",
+          "b_id": "NYSEDREGENTS_2008_4_4",
+          "a_split": "test",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Which material is the best conductor of electricity?",
+          "b_text": "Which material is the best conductor of electricity?"
+        },
+        {
+          "a_id": "OHAT_2007_5_40",
+          "b_id": "MCAS_2003_5_20",
+          "a_split": "test",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "What causes day and night on Earth?",
+          "b_text": "What causes day and night on Earth?"
+        },
+        {
+          "a_id": "TIMSS_2003_8_pg57",
+          "b_id": "TIMSS_1995_8_M10",
+          "a_split": "test",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Which of the following is NOT a mixture?",
+          "b_text": "Which of the following is NOT a mixture?"
+        },
+        {
+          "a_id": "Mercury_SC_400065",
+          "b_id": "Mercury_401603",
+          "a_split": "test",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "What keeps the planets in orbit around the Sun?",
+          "b_text": "What keeps the planets in orbit around the Sun?"
+        }
+      ],
+      "details": {
+        "scope": "within",
+        "pairs": [
+          [
+            "LEAP_2005_4_10267",
+            "LEAP__4_10227",
+            1.0
+          ],
+          [
+            "NAEP_2009_4_S11+1",
+            "NYSEDREGENTS_2008_4_4",
+            1.0
+          ],
+          [
+            "OHAT_2007_5_40",
+            "MCAS_2003_5_20",
+            1.0
+          ],
+          [
+            "TIMSS_2003_8_pg57",
+            "TIMSS_1995_8_M10",
+            1.0
+          ],
+          [
+            "Mercury_SC_400065",
+            "Mercury_401603",
+            1.0
+          ]
+        ],
+        "pairs_truncated": false,
+        "n_groups": 5,
+        "largest_group": 2,
+        "skipped_empty": 0,
+        "mask_numbers": false,
+        "key_method": "blake2b-128 over per-field NFKC/casefold/punct-strip/whitespace-collapse",
+        "rate_ci_low": 0.000899,
+        "rate_ci_high": 0.004917
+      }
+    },
+    {
+      "check": "exact",
+      "severity": "medium",
+      "splits": [
+        "train",
+        "test"
+      ],
+      "count": 7,
+      "denominator": 2376,
+      "rate": 0.002946127946127946,
+      "examples": [
+        {
+          "a_id": "CSZ_2009_8_CSZ30768",
+          "b_id": "CSZ30768",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Which of the following elements is best able to combine with itself and hydrogen [H] to form large molecules?",
+          "b_text": "Which of the following elements is best able to combine with itself and hydrogen [H] to form large molecules?"
+        },
+        {
+          "a_id": "NYSEDREGENTS_2006_4_9",
+          "b_id": "NYSEDREGENTS_2015_4_12",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Which object is the best conductor of electricity?",
+          "b_text": "Which object is the best conductor of electricity?"
+        },
+        {
+          "a_id": "NYSEDREGENTS_2009_4_25",
+          "b_id": "NYSEDREGENTS_2012_4_20",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Green plants get the energy they need to make food from",
+          "b_text": "Green plants get the energy they need to make food from"
+        },
+        {
+          "a_id": "CSZ_2009_8_CSZ20770",
+          "b_id": "CSZ20770",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Iron oxides, such as rust, form when iron metal reacts with oxygen in the air. What are the chemical symbols for the two elements found in iron oxide?",
+          "b_text": "Iron oxides, such as rust, form when iron metal reacts with oxygen in the air. What are the chemical symbols for the two elements found in iron oxide?"
+        },
+        {
+          "a_id": "Mercury_409875",
+          "b_id": "Mercury_7172813",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "In the Adirondack forests of New York, some trees have died. The change in the forest is thought to be related to air pollution and rain. Which abiotic factor most likely has been changed as a result ",
+          "b_text": "In the Adirondack forests of New York, some trees have died. The change in the forest is thought to be related to air pollution and rain. Which abiotic factor most likely has been changed as a result "
+        }
+      ],
+      "details": {
+        "scope": "cross",
+        "pairs": [
+          [
+            "CSZ_2009_8_CSZ30768",
+            "CSZ30768",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2006_4_9",
+            "NYSEDREGENTS_2015_4_12",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2009_4_25",
+            "NYSEDREGENTS_2012_4_20",
+            1.0
+          ],
+          [
+            "CSZ_2009_8_CSZ20770",
+            "CSZ20770",
+            1.0
+          ],
+          [
+            "Mercury_409875",
+            "Mercury_7172813",
+            1.0
+          ],
+          [
+            "TIMSS_2003_8_pg17",
+            "TIMSS_1995_8_K15",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2009_8_9",
+            "NYSEDREGENTS_2010_8_41",
+            1.0
+          ]
+        ],
+        "pairs_truncated": false,
+        "measured_split": "test",
+        "reference_split": "train",
+        "reverse_count": 8,
+        "reverse_denominator": 2251,
+        "reverse_rate": 0.003553976010661928,
+        "mask_numbers": false,
+        "key_method": "blake2b-128 over per-field NFKC/casefold/punct-strip/whitespace-collapse",
+        "rate_ci_low": 0.001428,
+        "rate_ci_high": 0.006069
+      }
+    },
+    {
+      "check": "near",
+      "severity": "medium",
+      "splits": [
+        "test",
+        "train"
+      ],
+      "count": 19,
+      "denominator": 4627,
+      "rate": 0.004106332396801383,
+      "examples": [
+        {
+          "a_id": "CSZ_2009_8_CSZ20770",
+          "b_id": "CSZ20770",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Iron oxides, such as rust, form when iron metal reacts with oxygen in the air. What are the chemical symbols for the two elements found in iron oxide?",
+          "b_text": "Iron oxides, such as rust, form when iron metal reacts with oxygen in the air. What are the chemical symbols for the two elements found in iron oxide?"
+        },
+        {
+          "a_id": "CSZ_2009_8_CSZ30768",
+          "b_id": "CSZ30768",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Which of the following elements is best able to combine with itself and hydrogen [H] to form large molecules?",
+          "b_text": "Which of the following elements is best able to combine with itself and hydrogen [H] to form large molecules?"
+        },
+        {
+          "a_id": "Mercury_409875",
+          "b_id": "Mercury_7172813",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "In the Adirondack forests of New York, some trees have died. The change in the forest is thought to be related to air pollution and rain. Which abiotic factor most likely has been changed as a result ",
+          "b_text": "In the Adirondack forests of New York, some trees have died. The change in the forest is thought to be related to air pollution and rain. Which abiotic factor most likely has been changed as a result "
+        },
+        {
+          "a_id": "NYSEDREGENTS_2004_4_6",
+          "b_id": "NYSEDREGENTS_2015_4_12",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Which object is the best conductor of electricity?",
+          "b_text": "Which object is the best conductor of electricity?"
+        },
+        {
+          "a_id": "NYSEDREGENTS_2006_4_9",
+          "b_id": "NYSEDREGENTS_2015_4_12",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Which object is the best conductor of electricity?",
+          "b_text": "Which object is the best conductor of electricity?"
+        }
+      ],
+      "details": {
+        "scope": "cross_split",
+        "threshold": 0.8,
+        "lsh_threshold": 0.7,
+        "num_perm": 128,
+        "shingle": 5,
+        "seed": 0,
+        "n_records": 4627,
+        "n_evaluable": 4627,
+        "n_candidate_pairs": 11,
+        "n_near_pairs": 10,
+        "n_candidate_pairs_below_threshold": 1,
+        "jaccard_histogram": {
+          "bin_edges": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            2,
+            8
+          ]
+        },
+        "flagged_by_split": {
+          "test": 9,
+          "train": 10
+        },
+        "near_pairs_by_split_pair": {
+          "test|train": 10
+        },
+        "pairs": [
+          [
+            "CSZ_2009_8_CSZ20770",
+            "CSZ20770",
+            1.0
+          ],
+          [
+            "CSZ_2009_8_CSZ30768",
+            "CSZ30768",
+            1.0
+          ],
+          [
+            "Mercury_409875",
+            "Mercury_7172813",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2004_4_6",
+            "NYSEDREGENTS_2015_4_12",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2006_4_9",
+            "NYSEDREGENTS_2015_4_12",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2009_4_25",
+            "NYSEDREGENTS_2012_4_20",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2009_8_9",
+            "NYSEDREGENTS_2010_8_41",
+            1.0
+          ],
+          [
+            "TIMSS_2003_8_pg17",
+            "TIMSS_1995_8_K15",
+            1.0
+          ],
+          [
+            "LEAP_2002_4_10246",
+            "LEAP__4_10224",
+            0.821429
+          ],
+          [
+            "MSA_2012_8_35",
+            "MDSA_2012_8_35",
+            0.809524
+          ]
+        ],
+        "pairs_listed": 10,
+        "pairs_truncated": false,
+        "note": "rate is flagged items / evaluable items; the Jaccard histogram covers LSH candidate pairs of this scope, each verified by exact Jaccard; pairs lists near-duplicate pairs [a_id, b_id, jaccard] with jaccard at or above the threshold",
+        "rate_ci_low": 0.00263,
+        "rate_ci_high": 0.006405
+      }
+    },
+    {
+      "check": "near",
+      "severity": "medium",
+      "splits": [
+        "test",
+        "train"
+      ],
+      "count": 27,
+      "denominator": 4627,
+      "rate": 0.005835314458612492,
+      "examples": [
+        {
+          "a_id": "AIMS_2009_8_11",
+          "b_id": "Mercury_407660",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "Which is an example of a chemical reaction?",
+          "b_text": "Which is an example of a chemical reaction?"
+        },
+        {
+          "a_id": "LEAP_2005_4_10267",
+          "b_id": "LEAP__4_10227",
+          "a_split": "test",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "A wetland was drained to build a mall. Two years later, there were no more toads in that area. Why did the toads disappear?",
+          "b_text": "A wetland was drained to build a mall. Two years later, there were no more toads in that area. Why did the toads disappear?"
+        },
+        {
+          "a_id": "MCAS_2000_8_4",
+          "b_id": "Mercury_7135870",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "Which is an example of a chemical change?",
+          "b_text": "Which is an example of a chemical change?"
+        },
+        {
+          "a_id": "Mercury_SC_400065",
+          "b_id": "Mercury_401603",
+          "a_split": "test",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "What keeps the planets in orbit around the Sun?",
+          "b_text": "What keeps the planets in orbit around the Sun?"
+        },
+        {
+          "a_id": "NAEP_2009_4_S11+1",
+          "b_id": "NYSEDREGENTS_2008_4_4",
+          "a_split": "test",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Which material is the best conductor of electricity?",
+          "b_text": "Which material is the best conductor of electricity?"
+        }
+      ],
+      "details": {
+        "scope": "within_split",
+        "threshold": 0.8,
+        "lsh_threshold": 0.7,
+        "num_perm": 128,
+        "shingle": 5,
+        "seed": 0,
+        "n_records": 4627,
+        "n_evaluable": 4627,
+        "n_candidate_pairs": 17,
+        "n_near_pairs": 15,
+        "n_candidate_pairs_below_threshold": 2,
+        "jaccard_histogram": {
+          "bin_edges": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            2,
+            13
+          ]
+        },
+        "flagged_by_split": {
+          "test": 16,
+          "train": 11
+        },
+        "near_pairs_by_split_pair": {
+          "train|train": 7,
+          "test|test": 8
+        },
+        "pairs": [
+          [
+            "AIMS_2009_8_11",
+            "Mercury_407660",
+            1.0
+          ],
+          [
+            "LEAP_2005_4_10267",
+            "LEAP__4_10227",
+            1.0
+          ],
+          [
+            "MCAS_2000_8_4",
+            "Mercury_7135870",
+            1.0
+          ],
+          [
+            "Mercury_SC_400065",
+            "Mercury_401603",
+            1.0
+          ],
+          [
+            "NAEP_2009_4_S11+1",
+            "NYSEDREGENTS_2008_4_4",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2006_4_9",
+            "NYSEDREGENTS_2004_4_6",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2007_4_30",
+            "NYSEDREGENTS_2011_4_25",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2011_4_26",
+            "Mercury_7008365",
+            1.0
+          ],
+          [
+            "OHAT_2007_5_40",
+            "MCAS_2003_5_20",
+            1.0
+          ],
+          [
+            "TIMSS_1995_8_J4",
+            "AIMS_2009_8_11",
+            1.0
+          ],
+          [
+            "TIMSS_1995_8_J4",
+            "Mercury_407660",
+            1.0
+          ],
+          [
+            "TIMSS_2003_8_pg57",
+            "TIMSS_1995_8_M10",
+            1.0
+          ],
+          [
+            "AKDE&ED_2012_8_48",
+            "AMP_2016_8_48",
+            0.954545
+          ],
+          [
+            "MSA_2012_8_36",
+            "MDSA_2012_8_36",
+            0.822222
+          ],
+          [
+            "LEAP_2002_8_10389",
+            "LEAP__8_10369",
+            0.814815
+          ]
+        ],
+        "pairs_listed": 15,
+        "pairs_truncated": false,
+        "note": "rate is flagged items / evaluable items; the Jaccard histogram covers LSH candidate pairs of this scope, each verified by exact Jaccard; pairs lists near-duplicate pairs [a_id, b_id, jaccard] with jaccard at or above the threshold",
+        "rate_ci_low": 0.004014,
+        "rate_ci_high": 0.008477
+      }
+    },
+    {
+      "check": "labels",
+      "severity": "medium",
+      "splits": [
+        "train",
+        "test"
+      ],
+      "count": 24,
+      "denominator": 4627,
+      "rate": 0.005186946185433326,
+      "examples": [
+        {
+          "a_id": "NYSEDREGENTS_2009_4_25",
+          "b_id": "NYSEDREGENTS_2012_4_20",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Green plants get the energy they need to make food from",
+          "b_text": "Green plants get the energy they need to make food from"
+        },
+        {
+          "a_id": "TIMSS_1995_8_J4",
+          "b_id": "AIMS_2009_8_11",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "Which is an example of a chemical reaction?",
+          "b_text": "Which is an example of a chemical reaction?"
+        },
+        {
+          "a_id": "MCAS_2000_8_4",
+          "b_id": "Mercury_7135870",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "Which is an example of a chemical change?",
+          "b_text": "Which is an example of a chemical change?"
+        },
+        {
+          "a_id": "NYSEDREGENTS_2009_8_9",
+          "b_id": "NYSEDREGENTS_2010_8_41",
+          "a_split": "train",
+          "b_split": "test",
+          "similarity": 1.0,
+          "a_text": "Which energy source is considered nonrenewable?",
+          "b_text": "Which energy source is considered nonrenewable?"
+        },
+        {
+          "a_id": "NYSEDREGENTS_2011_4_26",
+          "b_id": "Mercury_7008365",
+          "a_split": "train",
+          "b_split": "train",
+          "similarity": 1.0,
+          "a_text": "What is the main source of energy for the water cycle?",
+          "b_text": "What is the main source of energy for the water cycle?"
+        }
+      ],
+      "details": {
+        "mode": "near",
+        "n_groups_checked": 21,
+        "n_conflict_groups": 11,
+        "pairs": [
+          [
+            "NYSEDREGENTS_2009_4_25",
+            "NYSEDREGENTS_2012_4_20",
+            1.0
+          ],
+          [
+            "TIMSS_1995_8_J4",
+            "AIMS_2009_8_11",
+            1.0
+          ],
+          [
+            "TIMSS_1995_8_J4",
+            "Mercury_407660",
+            1.0
+          ],
+          [
+            "MCAS_2000_8_4",
+            "Mercury_7135870",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2009_8_9",
+            "NYSEDREGENTS_2010_8_41",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2011_4_26",
+            "Mercury_7008365",
+            1.0
+          ],
+          [
+            "TIMSS_2003_8_pg17",
+            "TIMSS_1995_8_K15",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2006_4_9",
+            "NYSEDREGENTS_2004_4_6",
+            1.0
+          ],
+          [
+            "NYSEDREGENTS_2006_4_9",
+            "NYSEDREGENTS_2015_4_12",
+            1.0
+          ],
+          [
+            "NAEP_2009_4_S11+1",
+            "NYSEDREGENTS_2008_4_4",
+            1.0
+          ],
+          [
+            "OHAT_2007_5_40",
+            "MCAS_2003_5_20",
+            1.0
+          ],
+          [
+            "TIMSS_2003_8_pg57",
+            "TIMSS_1995_8_M10",
+            1.0
+          ],
+          [
+            "Mercury_SC_400065",
+            "Mercury_401603",
+            1.0
+          ]
+        ],
+        "pairs_listed": 13,
+        "pairs_truncated": false,
+        "label_counts_in_conflicts": {
+          "D": 7,
+          "A": 7,
+          "B": 6,
+          "C": 2,
+          "1": 1,
+          "2": 1
+        },
+        "seed": 0,
+        "near": {
+          "threshold": 0.8,
+          "num_perm": 128,
+          "shingle": 5
+        },
+        "rate_ci_low": 0.003488,
+        "rate_ci_high": 0.007707
+      }
+    }
+  ],
+  "shortcuts": [],
+  "env_info": {
+    "git_sha": "6172c97bafc512540635d555acf421079fc74fb1",
+    "git_dirty": true,
+    "utc_time": "2026-11-18T20:22:23+00:00",
+    "cpu_model": "Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz",
+    "cpu_flags": [
+      "ACPI",
+      "AES",
+      "APIC",
+      "AVX1.0",
+      "AVX2",
+      "BMI1",
+      "BMI2",
+      "CLFSH",
+      "CMOV",
+      "CX16",
+      "CX8",
+      "DE",
+      "DS",
+      "DSCPL",
+      "DTES64",
+      "ERMS",
+      "EST",
+      "F16C",
+      "FMA",
+      "FPU",
+      "FPU_CSDS",
+      "FXSR",
+      "HTT",
+      "IBRS",
+      "INVPCID",
+      "L1DF",
+      "MCA",
+      "MCE",
+      "MDCLEAR",
+      "MMX",
+      "MON",
+      "MOVBE",
+      "MSR",
+      "MTRR",
+      "OSXSAVE",
+      "PAE",
+      "PAT",
+      "PBE",
+      "PCID",
+      "PCLMULQDQ",
+      "PDCM",
+      "PGE",
+      "POPCNT",
+      "PSE",
+      "PSE36",
+      "RDRAND",
+      "RDWRFSGS",
+      "SEGLIM64",
+      "SEP",
+      "SMEP",
+      "SS",
+      "SSBD",
+      "SSE",
+      "SSE2",
+      "SSE3",
+      "SSE4.1",
+      "SSE4.2",
+      "SSSE3",
+      "STIBP",
+      "TM",
+      "TM2",
+      "TPR",
+      "TSC",
+      "TSCTMR",
+      "TSC_THREAD_OFFSET",
+      "VME",
+      "VMX",
+      "X2APIC",
+      "XSAVE"
+    ],
+    "cores_physical": 4,
+    "cores_logical": 8,
+    "ram_bytes": 17179869184,
+    "os_name": "Darwin",
+    "os_version": "14.8.9",
+    "machine": "x86_64",
+    "python_version": "3.11.15",
+    "packages": {
+      "benchlint": "0.1.0",
+      "pydantic": "2.14.3",
+      "typer": "0.29.2",
+      "numpy": "2.4.6",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "scikit-learn": "1.9.1",
+      "datasketch": "2.0.0",
+      "datasets": "5.2.0",
+      "huggingface_hub": "2.4.0"
+    },
+    "checks": {
+      "exact": true,
+      "near": {
+        "threshold": 0.8,
+        "num_perm": 128,
+        "shingle": 5,
+        "lsh_threshold": 0.7
+      },
+      "ngram": {
+        "n": 13,
+        "reference": [],
+        "reference_fields": [
+          "text"
+        ]
+      },
+      "labels": true,
+      "shortcut": {
+        "views": [],
+        "margin_pts": 10.0,
+        "n_boot": 1000,
+        "n_perm": 200,
+        "max_rows": 20000
+      },
+      "canary": false
+    },
+    "data_splits": [
+      {
+        "split": "train",
+        "source_split": "train",
+        "backend": "hf-datasets",
+        "source_rows": 2251,
+        "kept_rows": 2251,
+        "sampled": false,
+        "dropped_by_label": 0
+      },
+      {
+        "split": "test",
+        "source_split": "test",
+        "backend": "hf-datasets",
+        "source_rows": 2376,
+        "kept_rows": 2376,
+        "sampled": false,
+        "dropped_by_label": 0
+      }
+    ]
+  },
+  "runtime_s": 19.643
+}

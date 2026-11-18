@@ -1,0 +1,369 @@
+{
+  "schema_version": "1",
+  "dataset": "gsm8k",
+  "spec": {
+    "name": "gsm8k",
+    "source": {
+      "kind": "hf",
+      "id_or_path": "openai/gsm8k",
+      "config": "main",
+      "revision": null,
+      "split_map": {
+        "train": "train",
+        "test": "test"
+      }
+    },
+    "text_fields": [
+      "question",
+      "answer"
+    ],
+    "label_field": null,
+    "id_field": null,
+    "max_rows_per_split": null,
+    "seed": 0,
+    "drop_label_values": []
+  },
+  "findings": [
+    {
+      "check": "exact",
+      "severity": "info",
+      "splits": [
+        "train"
+      ],
+      "count": 0,
+      "denominator": 7473,
+      "rate": 0.0,
+      "examples": [],
+      "details": {
+        "scope": "within",
+        "pairs": [],
+        "pairs_truncated": false,
+        "n_groups": 0,
+        "largest_group": 0,
+        "skipped_empty": 0,
+        "mask_numbers": false,
+        "key_method": "blake2b-128 over per-field NFKC/casefold/punct-strip/whitespace-collapse",
+        "rate_ci_low": 0.0,
+        "rate_ci_high": 0.000514
+      }
+    },
+    {
+      "check": "exact",
+      "severity": "info",
+      "splits": [
+        "test"
+      ],
+      "count": 0,
+      "denominator": 1319,
+      "rate": 0.0,
+      "examples": [],
+      "details": {
+        "scope": "within",
+        "pairs": [],
+        "pairs_truncated": false,
+        "n_groups": 0,
+        "largest_group": 0,
+        "skipped_empty": 0,
+        "mask_numbers": false,
+        "key_method": "blake2b-128 over per-field NFKC/casefold/punct-strip/whitespace-collapse",
+        "rate_ci_low": 0.0,
+        "rate_ci_high": 0.002904
+      }
+    },
+    {
+      "check": "exact",
+      "severity": "info",
+      "splits": [
+        "train",
+        "test"
+      ],
+      "count": 0,
+      "denominator": 1319,
+      "rate": 0.0,
+      "examples": [],
+      "details": {
+        "scope": "cross",
+        "pairs": [],
+        "pairs_truncated": false,
+        "measured_split": "test",
+        "reference_split": "train",
+        "reverse_count": 0,
+        "reverse_denominator": 7473,
+        "reverse_rate": 0.0,
+        "mask_numbers": false,
+        "key_method": "blake2b-128 over per-field NFKC/casefold/punct-strip/whitespace-collapse",
+        "rate_ci_low": 0.0,
+        "rate_ci_high": 0.002904
+      }
+    },
+    {
+      "check": "near",
+      "severity": "info",
+      "splits": [
+        "test",
+        "train"
+      ],
+      "count": 0,
+      "denominator": 8792,
+      "rate": 0.0,
+      "examples": [],
+      "details": {
+        "scope": "cross_split",
+        "threshold": 0.8,
+        "lsh_threshold": 0.7,
+        "num_perm": 128,
+        "shingle": 5,
+        "seed": 0,
+        "n_records": 8792,
+        "n_evaluable": 8792,
+        "n_candidate_pairs": 0,
+        "n_near_pairs": 0,
+        "n_candidate_pairs_below_threshold": 0,
+        "jaccard_histogram": {
+          "bin_edges": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "flagged_by_split": {
+          "test": 0,
+          "train": 0
+        },
+        "near_pairs_by_split_pair": {},
+        "pairs": [],
+        "pairs_listed": 0,
+        "pairs_truncated": false,
+        "note": "rate is flagged items / evaluable items; the Jaccard histogram covers LSH candidate pairs of this scope, each verified by exact Jaccard; pairs lists near-duplicate pairs [a_id, b_id, jaccard] with jaccard at or above the threshold",
+        "rate_ci_low": 0.0,
+        "rate_ci_high": 0.000437
+      }
+    },
+    {
+      "check": "near",
+      "severity": "info",
+      "splits": [
+        "test",
+        "train"
+      ],
+      "count": 0,
+      "denominator": 8792,
+      "rate": 0.0,
+      "examples": [],
+      "details": {
+        "scope": "within_split",
+        "threshold": 0.8,
+        "lsh_threshold": 0.7,
+        "num_perm": 128,
+        "shingle": 5,
+        "seed": 0,
+        "n_records": 8792,
+        "n_evaluable": 8792,
+        "n_candidate_pairs": 0,
+        "n_near_pairs": 0,
+        "n_candidate_pairs_below_threshold": 0,
+        "jaccard_histogram": {
+          "bin_edges": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+          ],
+          "counts": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "flagged_by_split": {
+          "test": 0,
+          "train": 0
+        },
+        "near_pairs_by_split_pair": {},
+        "pairs": [],
+        "pairs_listed": 0,
+        "pairs_truncated": false,
+        "note": "rate is flagged items / evaluable items; the Jaccard histogram covers LSH candidate pairs of this scope, each verified by exact Jaccard; pairs lists near-duplicate pairs [a_id, b_id, jaccard] with jaccard at or above the threshold",
+        "rate_ci_low": 0.0,
+        "rate_ci_high": 0.000437
+      }
+    }
+  ],
+  "shortcuts": [],
+  "env_info": {
+    "git_sha": "6172c97bafc512540635d555acf421079fc74fb1",
+    "git_dirty": true,
+    "utc_time": "2026-11-18T20:22:03+00:00",
+    "cpu_model": "Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz",
+    "cpu_flags": [
+      "ACPI",
+      "AES",
+      "APIC",
+      "AVX1.0",
+      "AVX2",
+      "BMI1",
+      "BMI2",
+      "CLFSH",
+      "CMOV",
+      "CX16",
+      "CX8",
+      "DE",
+      "DS",
+      "DSCPL",
+      "DTES64",
+      "ERMS",
+      "EST",
+      "F16C",
+      "FMA",
+      "FPU",
+      "FPU_CSDS",
+      "FXSR",
+      "HTT",
+      "IBRS",
+      "INVPCID",
+      "L1DF",
+      "MCA",
+      "MCE",
+      "MDCLEAR",
+      "MMX",
+      "MON",
+      "MOVBE",
+      "MSR",
+      "MTRR",
+      "OSXSAVE",
+      "PAE",
+      "PAT",
+      "PBE",
+      "PCID",
+      "PCLMULQDQ",
+      "PDCM",
+      "PGE",
+      "POPCNT",
+      "PSE",
+      "PSE36",
+      "RDRAND",
+      "RDWRFSGS",
+      "SEGLIM64",
+      "SEP",
+      "SMEP",
+      "SS",
+      "SSBD",
+      "SSE",
+      "SSE2",
+      "SSE3",
+      "SSE4.1",
+      "SSE4.2",
+      "SSSE3",
+      "STIBP",
+      "TM",
+      "TM2",
+      "TPR",
+      "TSC",
+      "TSCTMR",
+      "TSC_THREAD_OFFSET",
+      "VME",
+      "VMX",
+      "X2APIC",
+      "XSAVE"
+    ],
+    "cores_physical": 4,
+    "cores_logical": 8,
+    "ram_bytes": 17179869184,
+    "os_name": "Darwin",
+    "os_version": "14.8.9",
+    "machine": "x86_64",
+    "python_version": "3.11.15",
+    "packages": {
+      "benchlint": "0.1.0",
+      "pydantic": "2.14.3",
+      "typer": "0.29.2",
+      "numpy": "2.4.6",
+      "pandas": "3.1.1",
+      "pyarrow": "26.0.1",
+      "scikit-learn": "1.9.1",
+      "datasketch": "2.0.0",
+      "datasets": "5.2.0",
+      "huggingface_hub": "2.4.0"
+    },
+    "checks": {
+      "exact": true,
+      "near": {
+        "threshold": 0.8,
+        "num_perm": 128,
+        "shingle": 5,
+        "lsh_threshold": 0.7
+      },
+      "ngram": {
+        "n": 13,
+        "reference": [],
+        "reference_fields": [
+          "text"
+        ]
+      },
+      "labels": true,
+      "shortcut": {
+        "views": [],
+        "margin_pts": 10.0,
+        "n_boot": 1000,
+        "n_perm": 200,
+        "max_rows": 20000
+      },
+      "canary": false
+    },
+    "data_splits": [
+      {
+        "split": "train",
+        "source_split": "train",
+        "backend": "hf-datasets",
+        "source_rows": 7473,
+        "kept_rows": 7473,
+        "sampled": false,
+        "dropped_by_label": 0
+      },
+      {
+        "split": "test",
+        "source_split": "test",
+        "backend": "hf-datasets",
+        "source_rows": 1319,
+        "kept_rows": 1319,
+        "sampled": false,
+        "dropped_by_label": 0
+      }
+    ]
+  },
+  "runtime_s": 42.185
+}
