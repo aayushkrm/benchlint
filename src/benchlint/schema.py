@@ -39,6 +39,9 @@ class DatasetSpec(BaseModel):
     id_field: str | None
     max_rows_per_split: int | None
     seed: int = 0
+    drop_label_values: list[Any] = Field(default_factory=list)
+    """Rows whose label (compared as text) is one of these are removed before sampling.
+    Used for SNLI, where ``-1`` marks an item with no gold label. Empty means keep all rows."""
 
 
 class View(BaseModel):
@@ -55,6 +58,10 @@ class NearConfig(BaseModel):
     threshold: float = 0.8
     num_perm: int = 128
     shingle: int = 5
+    lsh_threshold: float = 0.7
+    """LSH retrieval threshold. The effective value is ``min(threshold, lsh_threshold)``.
+    Retrieving below the reporting threshold raises LSH recall; reported pairs are still
+    verified by exact Jaccard at ``threshold``."""
 
 
 class NgramConfig(BaseModel):
@@ -62,6 +69,8 @@ class NgramConfig(BaseModel):
 
     n: int = 13
     reference: list[SourceSpec] = Field(default_factory=list)
+    reference_fields: list[str] = Field(default_factory=lambda: ["text"])
+    """Fields of each reference row that are joined (space-separated) into its text."""
 
 
 class ShortcutConfig(BaseModel):

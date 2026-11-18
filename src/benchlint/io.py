@@ -58,6 +58,7 @@ class SplitLoad:
     source_rows: int
     kept_rows: int
     sampled: bool
+    dropped_by_label: int = 0
 
 
 @dataclass(frozen=True)
@@ -71,6 +72,7 @@ class _Source:
     backend: str
     n_rows: int
     take: Callable[[list[int] | None], list[dict[str, Any]]]
+    column: Callable[[str], list[Any]]
 
 
 def load_dataset(spec: DatasetSpec, *, base_dir: Path | None = None) -> dict[str, list[Record]]:
@@ -98,11 +100,22 @@ def load_dataset_detailed(
     if spec.max_rows_per_split is not None and spec.max_rows_per_split < 1:
         raise ValueError("max_rows_per_split must be at least 1 when set")
 
+    if spec.drop_label_values and spec.label_field is None:
+        raise ValueError("drop_label_values needs a label_field")
+
     records: dict[str, list[Record]] = {}
     loads: list[SplitLoad] = []
     for split, source_split in spec.source.split_map.items():
         source = _open_source(spec.source, source_split, base_dir)
-        indices = _select_indices(source.n_rows, spec.max_rows_per_split, spec.seed, split)
+        eligible = _eligible_positions(source, spec)
+        n_eligible = source.n_rows if eligible is None else len(eligible)
+        sampled_pos = _select_indices(n_eligible, spec.max_rows_per_split, spec.seed, split)
+        if eligible is None:
+            indices = sampled_pos
+        elif sampled_pos is None:
+            indices = eligible
+        else:
+            indices = [eligible[i] for i in sampled_pos]
         rows = source.take(indices)
         positions = range(source.n_rows) if indices is None else indices
         records[split] = [
@@ -116,10 +129,29 @@ def load_dataset_detailed(
                 backend=source.backend,
                 source_rows=source.n_rows,
                 kept_rows=len(rows),
-                sampled=indices is not None,
+                sampled=sampled_pos is not None,
+                dropped_by_label=source.n_rows - n_eligible,
             )
         )
     return records, loads
+
+
+def _eligible_positions(source: _Source, spec: DatasetSpec) -> list[int] | None:
+    """Source positions that survive ``drop_label_values``, or None when nothing is dropped.
+
+    Label values are compared as stripped text, so ``-1`` matches the integer -1 and the
+    string "-1". Dropping happens before the seeded cap, so the cap samples kept rows only.
+    """
+    if not spec.drop_label_values or spec.label_field is None:
+        return None
+    drop = {str(v).strip() for v in spec.drop_label_values}
+    labels = source.column(spec.label_field)
+    return [i for i, value in enumerate(labels) if _label_text(value) not in drop]
+
+
+def _label_text(value: Any) -> str:
+    """Text form of a label for comparison: None becomes "", otherwise ``str`` stripped."""
+    return "" if value is None else str(value).strip()
 
 
 def _split_seed(seed: int, split: str) -> int:
@@ -193,15 +225,30 @@ def _open_source(src: SourceSpec, source_split: str, base_dir: Path | None) -> _
     path = _local_path(src, source_split, base_dir)
     if src.kind == "jsonl":
         rows = _read_jsonl(path)
-        return _Source("jsonl", len(rows), lambda idx: _take_list(rows, idx))
+        return _Source(
+            "jsonl",
+            len(rows),
+            lambda idx: _take_list(rows, idx),
+            lambda name: [row.get(name) for row in rows],
+        )
     if src.kind == "csv":
         rows_csv = _read_csv(path)
-        return _Source("csv", len(rows_csv), lambda idx: _take_list(rows_csv, idx))
+        return _Source(
+            "csv",
+            len(rows_csv),
+            lambda idx: _take_list(rows_csv, idx),
+            lambda name: [row.get(name) for row in rows_csv],
+        )
     if src.kind == "parquet":
         import pyarrow.parquet as pq
 
         table = pq.read_table(path)
-        return _Source("parquet", table.num_rows, lambda idx: _take_table(table, idx))
+        return _Source(
+            "parquet",
+            table.num_rows,
+            lambda idx: _take_table(table, idx),
+            lambda name: table.column(name).to_pylist(),
+        )
     raise ValueError(f"unsupported source kind: {src.kind!r}")
 
 
@@ -279,6 +326,7 @@ def _open_hf(src: SourceSpec, source_split: str) -> _Source:
         "hf-datasets",
         len(ds),
         lambda idx: _take_hf(ds, idx),
+        lambda name: list(ds[name]),
     )
 
 
@@ -316,6 +364,7 @@ def _open_hf_parquet(src: SourceSpec, source_split: str, *, reason: str) -> _Sou
         "hf-parquet-fallback",
         table.num_rows,
         lambda idx: _take_table(table, idx),
+        lambda name: table.column(name).to_pylist(),
     )
 
 

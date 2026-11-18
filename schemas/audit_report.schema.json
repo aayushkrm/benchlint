@@ -3,6 +3,11 @@
     "DatasetSpec": {
       "description": "One dataset to audit. Loaded from a YAML file under ``specs/``.",
       "properties": {
+        "drop_label_values": {
+          "items": {},
+          "title": "Drop Label Values",
+          "type": "array"
+        },
         "id_field": {
           "anyOf": [
             {
