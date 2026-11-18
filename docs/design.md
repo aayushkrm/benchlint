@@ -88,3 +88,16 @@ recall and verification right.
   suggested extras; that was not adopted for this reason.
 - `jsonschema` is not installed in the environment, so the schema is not validated at runtime;
   the committed schema is compared with the model in the tests instead.
+
+## Provenance
+
+- Each run writes `env.json` with the commit (`git_sha`), whether the code tree had uncommitted
+  changes (`git_dirty`), the uncommitted paths (`git_dirty_paths`) and a hash of the uncommitted
+  code diff (`git_diff_sha256`). Paths under `results/` do not count as dirty: a run writes its
+  own outputs there.
+- The README and `results/headline.json` take each experiment's commit and state from that
+  experiment's own `env.json`; they never quote one commit for all of them.
+- Runs made before these fields existed record only the commit and the dirty flag. Their
+  uncommitted paths were not recorded, so `docs/deviations.md` reconstructs what can be
+  reconstructed from the git history and says what cannot.
+

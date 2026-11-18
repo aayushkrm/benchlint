@@ -67,7 +67,7 @@ What each check can and cannot show. Read before quoting a finding.
 
 - E1 uses synthetic edits of real text. Its results measure the detector on known edits and say
   nothing about how often benchmarks leak.
-- E2 compares with literature values that are cited as reported. The classifier differs from the
+- E2 compares with literature values checked against Table 2 of the cited paper (arXiv:1803.02324), not measured here. The classifier differs from the
   one in the cited paper, so the comparison is about shortcut strength, not a replication.
-- No full results are committed yet. Until `make results` runs and its output is committed, the
-  README and site say that no results exist.
+- E4 (dogfooding on the sibling projects) has not been run.
+- The E1 and E3 results come from working trees with uncommitted changes. The provenance table in the README and `docs/deviations.md` say which files, and what the recorded commit does and does not reproduce.

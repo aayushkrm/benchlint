@@ -192,3 +192,4 @@ Recorded in `docs/deviations.md`, with the reasons:
 - E1 false-positive pairs are drawn from the 600 clean controls.
 - The shortcut check's training cap for SNLI and MNLI is 100,000 rows.
 - Wording only: the E2 stop rule refers to the initial run (banned-word rule, DECISION section 6.9).
+- Literature check (2026-11-19, after the first E2 run): SNLI test 67.0 and MultiNLI matched 53.9 are verified against Table 2 of Gururangan et al. (2018), arXiv:1803.02324. The check required by the E2 section is satisfied; the MNLI constant in the first run (53) is corrected, see docs/deviations.md.
