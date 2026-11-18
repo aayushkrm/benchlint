@@ -7,7 +7,7 @@ import string
 
 import pytest
 
-from benchlint.checks.near import _norm
+from benchlint.checks.near import _tokens
 from benchlint.checks.ngram import find_ngram_overlap
 from benchlint.schema import NgramConfig, Record
 
@@ -27,7 +27,7 @@ def _rec(rid: str, text: str, split: str = "test") -> Record:
 
 def _grams(text: str, n: int) -> set[tuple[str, ...]]:
     """Return the distinct word n-grams of ``text`` as raw tuples (no hashing)."""
-    tokens = _norm(text).split()
+    tokens = _tokens(text)
     return {tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1)}
 
 

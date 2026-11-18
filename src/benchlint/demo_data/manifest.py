@@ -73,8 +73,9 @@ def _pairs_of(finding: Finding) -> set[frozenset[str]] | None:
         return None
     out: set[frozenset[str]] = set()
     for item in raw:
-        if isinstance(item, (list, tuple)) and len(item) == 2:
-            out.add(frozenset(str(x) for x in item))
+        if isinstance(item, (list, tuple)) and len(item) >= 2:
+            # [a_id, b_id] or [a_id, b_id, similarity] as written by the near check.
+            out.add(frozenset({str(item[0]), str(item[1])}))
         elif isinstance(item, dict) and "a_id" in item and "b_id" in item:
             out.add(frozenset({str(item["a_id"]), str(item["b_id"])}))
         else:

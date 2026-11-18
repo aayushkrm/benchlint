@@ -7,7 +7,7 @@ import string
 
 import pytest
 
-from benchlint.checks.near import _norm, _tokens, find_near_duplicates, shingle_set
+from benchlint.checks.near import _tokens, find_near_duplicates, shingle_set
 from benchlint.schema import Finding, NearConfig, Record
 
 CFG = NearConfig()  # threshold 0.8, num_perm 128, 5-word shingles
@@ -152,7 +152,7 @@ def test_template_phrasing_is_flagged_and_shows_in_histogram() -> None:
 
 def test_normalisation_ignores_case_and_punctuation() -> None:
     """Texts that differ only in case and punctuation normalise to the same shingles."""
-    assert _norm("Hello,  WORLD!  Don't") == "hello world don t"
+    assert _tokens("Hello,  WORLD!  Don't") == ["hello", "world", "dont"]
     a = "The quick brown fox jumps over the lazy dog today."
     b = "THE QUICK, BROWN FOX! jumps over the lazy dog today"
     records = [_rec("a", "train", a), _rec("b", "test", b)]

@@ -23,10 +23,8 @@ from collections import Counter, defaultdict
 from collections.abc import Sequence
 from typing import Final
 
-from datasketch import MinHash, MinHashLSH
-
 from benchlint.checks.exact import EXAMPLE_LIMIT, HIGH_RATE, Severity, exact_keys, example_pair
-from benchlint.normalize import normalize_fields
+from benchlint.checks.near import jaccard, lsh_candidates, record_shingles
 from benchlint.schema import ExamplePair, Finding, NearConfig, Record
 
 LABEL_TOP_K: Final = 20
@@ -58,7 +56,10 @@ def find_label_conflicts(
         groups = _exact_groups(items, keys)
         mode = "exact"
     else:
-        shingles = {i: _shingles(records[i], text_fields, near, mask_numbers) for i in items}
+        shingles = {
+            i: record_shingles(records[i], text_fields, near.shingle, mask_numbers=mask_numbers)
+            for i in items
+        }
         groups = _near_groups(items, keys, shingles, near, seed)
         mode = "near"
 
@@ -90,7 +91,7 @@ def find_label_conflicts(
         a = group[0]
         a_label = _label_text(records[a].label)
         b = next(i for i in group if _label_text(records[i].label) != a_label)
-        similarity = 1.0 if mode == "exact" else _jaccard(shingles[a], shingles[b])
+        similarity = 1.0 if mode == "exact" else jaccard(shingles[a], shingles[b])
         examples.append(example_pair(records[a], records[b], text_fields, similarity))
 
     split_order = list(dict.fromkeys(r.split for r in records))
@@ -147,30 +148,6 @@ def _exact_groups(items: Sequence[int], keys: Sequence[str | None]) -> list[list
     return list(by_key.values())
 
 
-def _shingles(
-    record: Record, text_fields: Sequence[str], near: NearConfig, mask_numbers: bool
-) -> frozenset[str]:
-    """Return the word ``near.shingle``-gram set of a record's normalised text.
-
-    A text shorter than ``near.shingle`` words gives one shingle: the whole text.
-    """
-    tokens = " ".join(normalize_fields(record.fields, text_fields, mask_numbers=mask_numbers))
-    words = tokens.split()
-    k = near.shingle
-    if not words:
-        return frozenset()
-    if len(words) < k:
-        return frozenset({" ".join(words)})
-    return frozenset(" ".join(words[i : i + k]) for i in range(len(words) - k + 1))
-
-
-def _jaccard(a: frozenset[str], b: frozenset[str]) -> float:
-    """Exact Jaccard similarity of two shingle sets (0.0 when both are empty)."""
-    if not a and not b:
-        return 0.0
-    return len(a & b) / len(a | b)
-
-
 def _near_groups(
     items: Sequence[int],
     keys: Sequence[str | None],
@@ -178,7 +155,11 @@ def _near_groups(
     near: NearConfig,
     seed: int,
 ) -> list[list[int]]:
-    """Return connected components of exact and near-duplicate records (size >= 2 only)."""
+    """Return connected components of exact and near-duplicate records (size >= 2 only).
+
+    Candidate pairs come from the shared :func:`benchlint.checks.near.lsh_candidates`, which
+    returns exact Jaccard; a pair joins a component when it reaches ``near.threshold``.
+    """
     m = len(items)
     parent = list(range(m))
 
@@ -203,27 +184,10 @@ def _near_groups(
         else:
             first_pos[key] = pos
 
-    lsh = MinHashLSH(threshold=near.threshold, num_perm=near.num_perm)
-    minhashes: list[MinHash] = []
-    for pos, i in enumerate(items):
-        mh = MinHash(num_perm=near.num_perm, seed=seed)
-        for shingle in shingles[i]:
-            mh.update(shingle.encode("utf-8"))
-        minhashes.append(mh)
-        lsh.insert(str(pos), mh)
-
-    checked: set[tuple[int, int]] = set()
-    for pos in range(m):
-        for other in lsh.query(minhashes[pos]):
-            j = int(other)
-            if j == pos:
-                continue
-            pair = (min(pos, j), max(pos, j))
-            if pair in checked:
-                continue
-            checked.add(pair)
-            if _jaccard(shingles[items[pair[0]]], shingles[items[pair[1]]]) >= near.threshold:
-                union(pair[0], pair[1])
+    positional = {pos: shingles[i] for pos, i in enumerate(items)}
+    for (p, q), sim in lsh_candidates(positional, near, seed).items():
+        if sim >= near.threshold:
+            union(p, q)
 
     components: dict[int, list[int]] = defaultdict(list)
     for pos, i in enumerate(items):
