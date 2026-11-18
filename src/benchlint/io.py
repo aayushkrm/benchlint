@@ -326,8 +326,17 @@ def _open_hf(src: SourceSpec, source_split: str) -> _Source:
         "hf-datasets",
         len(ds),
         lambda idx: _take_hf(ds, idx),
-        lambda name: list(ds[name]),
+        lambda name: _hf_column(ds, name),
     )
+
+
+def _hf_column(ds: Any, name: str) -> list[Any]:
+    """All values of one column. Reads the Arrow column directly; ``list(ds[name])`` is far
+    slower on large splits (about 30 s for SNLI train), so it is only the fallback."""
+    try:
+        return list(ds.data.column(name).to_pylist())
+    except Exception:
+        return list(ds[name])
 
 
 def _take_hf(ds: Any, indices: list[int] | None) -> list[dict[str, Any]]:
