@@ -1,5 +1,5 @@
 # Run `make help`-style targets from the repo root. Requires uv (https://docs.astral.sh/uv/).
-.PHONY: setup lint fmt type test demo report check-results site release
+.PHONY: setup lint fmt type test demo results report check-results site release
 
 setup:
 	uv venv -p 3.11 .venv
@@ -19,21 +19,29 @@ type:
 test:
 	uv run pytest -m "not model"
 
+# Synthetic demo with planted leaks. Exit 1 is the expected result for findings, so the demo
+# runs with --fail-on none and exits 0 when it completes.
 demo:
-	uv run benchlint demo --out demo_out
+	uv run benchlint demo --out demo_out --fail-on none
 
+# The full experiment queue, in order. Slow (network downloads, CPU-bound); not run in CI.
+results:
+	uv run python scripts/calibrate.py
+	uv run python scripts/run_e2.py
+	uv run python scripts/run_e3.py
+
+# Render committed result JSON into README.md (only the results markers change).
 report:
-	@echo "report: scripts/render_readme.py is added in the integration work package" >&2
-	@exit 1
+	uv run python scripts/render_readme.py
 
+# CI gate: fails if README.md is out of date with results/.
 check-results:
-	@echo "check-results: scripts/render_readme.py --check is added in the integration work package" >&2
-	@exit 1
+	uv run python scripts/render_readme.py --check
 
+# Static GitHub Pages site from committed results (index and per-dataset reports).
 site:
-	@echo "site: the static site builder is added in the integration work package" >&2
-	@exit 1
+	uv run python scripts/build_site.py
 
+# Build the source and wheel distributions into dist/.
 release:
-	@echo "release: not yet implemented; public release waits for the publish gate" >&2
-	@exit 1
+	uv build
