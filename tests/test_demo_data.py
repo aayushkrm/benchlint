@@ -385,3 +385,24 @@ def test_compare_planted_missing_findings_are_missed(manifest: DemoManifest) -> 
 
 def test_public_exports() -> None:
     assert demo_data.SYNTHETIC_NAME == "SYNTHETIC-demo"
+
+
+def test_label_conflicts_with_three_of_six_pairs_listed_is_partial(manifest: DemoManifest) -> None:
+    """Pair-level recall: three of the six planted label pairs gives 3 found, status partial."""
+    pairs = _leak(manifest, "label_conflict")
+    assert len(pairs) == 6
+    listed = [[a, b, 1.0] for a, b in pairs[:3]]
+    findings = [_f("labels", ["train"], 6, {"pairs": listed})]
+    rows = {r.category: r for r in compare_planted(manifest, _report_with(findings, []))}
+    row = rows["label_conflict"]
+    assert row.basis == "pairs"
+    assert row.planted == 6
+    assert row.found == 3
+    assert row.status == "partial"
+
+
+def test_label_conflict_without_pair_listing_is_not_attributed(manifest: DemoManifest) -> None:
+    findings = [_f("labels", ["train"], 12, {})]
+    rows = {r.category: r for r in compare_planted(manifest, _report_with(findings, []))}
+    assert rows["label_conflict"].status == "not attributed"
+    assert rows["label_conflict"].found is None

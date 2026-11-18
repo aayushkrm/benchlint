@@ -21,9 +21,16 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from collections.abc import Sequence
-from typing import Final
+from typing import Any, Final
 
-from benchlint.checks.exact import EXAMPLE_LIMIT, HIGH_RATE, Severity, exact_keys, example_pair
+from benchlint.checks.exact import (
+    EXAMPLE_LIMIT,
+    HIGH_RATE,
+    PAIR_LIMIT,
+    Severity,
+    exact_keys,
+    example_pair,
+)
 from benchlint.checks.near import jaccard, lsh_candidates, record_shingles
 from benchlint.schema import ExamplePair, Finding, NearConfig, Record
 
@@ -86,6 +93,19 @@ def find_label_conflicts(
     else:
         severity = "medium"
 
+    pairs: list[list[Any]] = []
+    pairs_total = 0
+    for group in conflicts:
+        for x in range(len(group)):
+            for y in range(x + 1, len(group)):
+                a, b = group[x], group[y]
+                if _label_text(records[a].label) == _label_text(records[b].label):
+                    continue
+                pairs_total += 1
+                if len(pairs) < PAIR_LIMIT:
+                    sim = 1.0 if mode == "exact" else jaccard(shingles[a], shingles[b])
+                    pairs.append([records[a].id, records[b].id, round(sim, 6)])
+
     examples: list[ExamplePair] = []
     for group in conflicts[:EXAMPLE_LIMIT]:
         a = group[0]
@@ -114,6 +134,9 @@ def find_label_conflicts(
                 "mode": mode,
                 "n_groups_checked": n_checked,
                 "n_conflict_groups": len(conflicts),
+                "pairs": pairs,
+                "pairs_listed": len(pairs),
+                "pairs_truncated": pairs_total > len(pairs),
                 "label_counts_in_conflicts": dict(label_counts.most_common(LABEL_TOP_K)),
                 "seed": seed,
                 "near": None

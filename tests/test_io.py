@@ -365,3 +365,61 @@ def test_network_gsm8k_small_sample() -> None:
     )
     out = load_dataset(spec)
     assert len(out["test"]) == 5
+
+
+def test_drop_label_values_removes_rows_before_the_cap(tmp_path: Path) -> None:
+    """Rows with a dropped label never reach the sample, so the cap counts kept rows only."""
+    from benchlint.io import load_dataset_detailed
+    from benchlint.schema import DatasetSpec, SourceSpec
+
+    rows = [{"id": str(i), "text": f"t{i}", "label": -1 if i % 2 else 0} for i in range(40)]
+    path = tmp_path / "data.jsonl"
+    path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+    spec = DatasetSpec(
+        name="drop",
+        source=SourceSpec(
+            kind="jsonl",
+            id_or_path=str(path),
+            config=None,
+            revision=None,
+            split_map={"train": "data"},
+        ),
+        text_fields=["text"],
+        label_field="label",
+        id_field="id",
+        max_rows_per_split=10,
+        seed=0,
+        drop_label_values=[-1],
+    )
+    records, loads = load_dataset_detailed(spec)
+    assert len(records["train"]) == 10
+    assert all(r.label == 0 for r in records["train"])
+    assert loads[0].dropped_by_label == 20
+    assert loads[0].source_rows == 40
+    assert loads[0].kept_rows == 10
+
+
+def test_without_drop_values_nothing_is_removed(tmp_path: Path) -> None:
+    from benchlint.io import load_dataset_detailed
+    from benchlint.schema import DatasetSpec, SourceSpec
+
+    path = tmp_path / "data.jsonl"
+    path.write_text('{"id": "a", "text": "x", "label": -1}\n', encoding="utf-8")
+    spec = DatasetSpec(
+        name="keep",
+        source=SourceSpec(
+            kind="jsonl",
+            id_or_path=str(path),
+            config=None,
+            revision=None,
+            split_map={"train": "data"},
+        ),
+        text_fields=["text"],
+        label_field="label",
+        id_field="id",
+        max_rows_per_split=None,
+        seed=0,
+    )
+    records, loads = load_dataset_detailed(spec)
+    assert len(records["train"]) == 1
+    assert loads[0].dropped_by_label == 0

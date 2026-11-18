@@ -152,7 +152,8 @@ def test_template_phrasing_is_flagged_and_shows_in_histogram() -> None:
 
 def test_normalisation_ignores_case_and_punctuation() -> None:
     """Texts that differ only in case and punctuation normalise to the same shingles."""
-    assert _tokens("Hello,  WORLD!  Don't") == ["hello", "world", "dont"]
+    assert _tokens("Hello,  WORLD!  Don't") == ["hello", "world", "don", "t"]
+    assert _tokens("well-known U.S.") == ["well", "known", "u", "s"]
     a = "The quick brown fox jumps over the lazy dog today."
     b = "THE QUICK, BROWN FOX! jumps over the lazy dog today"
     records = [_rec("a", "train", a), _rec("b", "test", b)]
@@ -207,3 +208,27 @@ def test_missing_text_field_raises() -> None:
     records = [Record(id="a", split="train", fields={"other": "x"}, label=None)]
     with pytest.raises(ValueError, match="lacks fields"):
         find_near_duplicates(records, ["text"], CFG)
+
+
+def test_reported_pairs_carry_exact_jaccard_and_clear_the_threshold() -> None:
+    """details['pairs'] lists [a_id, b_id, jaccard]; each jaccard is the exact value."""
+    base = " ".join(_words(120, seed=31))
+    records = [_rec("tr0", "train", base), _rec("te0", "test", base)]
+    records.append(_rec("te1", "test", " ".join(_edit(base.split(), 2, "sub", seed=4))))
+    cross = _cross(find_near_duplicates(records, ["text"], CFG))
+    assert cross.details["pairs_truncated"] is False
+    listed = {frozenset((a, b)): j for a, b, j in cross.details["pairs"]}
+    assert frozenset(("tr0", "te0")) in listed
+    assert frozenset(("tr0", "te1")) in listed
+    for value in listed.values():
+        assert value >= CFG.threshold
+    assert listed[frozenset(("tr0", "te1"))] == pytest.approx(
+        _jaccard(base, " ".join(_edit(base.split(), 2, "sub", seed=4))), abs=1e-6
+    )
+
+
+def test_lsh_retrieval_threshold_is_below_the_reporting_threshold() -> None:
+    from benchlint.checks.near import lsh_retrieval_threshold
+
+    assert lsh_retrieval_threshold(NearConfig()) == pytest.approx(0.7)
+    assert lsh_retrieval_threshold(NearConfig(threshold=0.6)) == pytest.approx(0.6)

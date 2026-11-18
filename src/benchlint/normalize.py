@@ -52,6 +52,21 @@ def normalize_text(text: str, *, mask_numbers: bool = False) -> str:
     return " ".join(out.split())
 
 
+def word_tokens(text: str, *, mask_numbers: bool = False) -> list[str]:
+    """Word tokens for shingles and n-grams: punctuation becomes a space, not nothing.
+
+    Steps 1, 2, 4 and 5 of :func:`normalize_text` are the same. Step 3 differs: each ``P*``
+    character becomes a space, so "well-known" gives two words and "U.S." gives "u s". Symbols
+    (``S*``) are kept, as in ``normalize_text``. This is the tokenisation used by the near
+    duplicate, label and n-gram checks; the exact-duplicate key still uses ``normalize_text``.
+    """
+    out = unicodedata.normalize("NFKC", text).casefold()
+    out = _punctuation_pattern().sub(" ", out)
+    if mask_numbers:
+        out = _DIGIT_RUN.sub("0", out)
+    return out.split()
+
+
 def normalize_fields(
     fields: Mapping[str, str], keys: Sequence[str], *, mask_numbers: bool = False
 ) -> list[str]:

@@ -8,7 +8,7 @@ at or above ``config.threshold``, so reported pairs are never below the reportin
 LSH recall is probabilistic: a pair just above the threshold can still be missed. The seed
 fixes the permutations, so a run is reproducible.
 
-Text normalisation is :func:`benchlint.normalize.normalize_text` (applied per field). The
+Text tokens are :func:`benchlint.normalize.word_tokens` (applied per field). The
 helpers below (``record_shingles``, ``minhash_of``, ``jaccard``, ``lsh_candidates``) are the
 single implementation of MinHash and LSH in benchlint; ``checks/labels.py`` uses them too.
 """
@@ -20,19 +20,18 @@ from typing import Any
 
 from datasketch import MinHash, MinHashLSH
 
-from benchlint.normalize import normalize_fields, normalize_text
+from benchlint.checks.exact import PAIR_LIMIT
+from benchlint.normalize import word_tokens
 from benchlint.schema import ExamplePair, Finding, NearConfig, Record
 
 _EXAMPLE_LIMIT = 5
 _TEXT_LIMIT = 200
 _HIST_BINS = 10
-PAIR_LIMIT = 5000
-"""Most near-duplicate pairs listed per finding in ``details["pairs"]``, highest Jaccard first."""
 
 
 def _tokens(text: str) -> list[str]:
-    """Whitespace tokens of the normalised ``text`` (see :mod:`benchlint.normalize`)."""
-    return normalize_text(text).split()
+    """Word tokens of ``text`` (see :func:`benchlint.normalize.word_tokens`)."""
+    return word_tokens(text)
 
 
 def _record_text(record: Record, text_fields: Sequence[str]) -> str:
@@ -75,8 +74,10 @@ def record_shingles(
     missing = [name for name in text_fields if name not in record.fields]
     if missing:
         raise ValueError(f"record {record.id!r} in split {record.split!r} lacks fields {missing}")
-    parts = normalize_fields(record.fields, text_fields, mask_numbers=mask_numbers)
-    return shingle_set(" ".join(parts).split(), k)
+    words: list[str] = []
+    for name in text_fields:
+        words.extend(word_tokens(record.fields[name], mask_numbers=mask_numbers))
+    return shingle_set(words, k)
 
 
 def minhash_of(shingles: frozenset[str], num_perm: int, seed: int) -> MinHash:

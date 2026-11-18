@@ -142,6 +142,20 @@ def compare_planted(manifest: DemoManifest, report: AuditReport) -> list[LeakRow
         total_count = sum(f.count for f in matches)
         planted_pairs = {frozenset(p) for p in leak.pairs}
         pair_sets = [_pairs_of(f) for f in matches]
+        if not matches and leak.check in ("exact", "labels", "near"):
+            # No finding of this kind at all: zero of the planted pairs were listed.
+            rows.append(
+                LeakRow(
+                    category=leak.category,
+                    check=leak.check,
+                    planted=len(planted_pairs),
+                    found=0,
+                    status="missed",
+                    basis="pairs",
+                    note="no finding of this check kind; 0 planted pairs listed",
+                )
+            )
+            continue
         if matches and all(ps is not None for ps in pair_sets):
             found_pairs: set[frozenset[str]] = set()
             for ps in pair_sets:
@@ -161,23 +175,24 @@ def compare_planted(manifest: DemoManifest, report: AuditReport) -> list[LeakRow
             )
             continue
 
-        if leak.check == "near":
+        if leak.check in ("near", "labels", "exact"):
+            # These checks list their pairs; without a listing the row is not attributed,
+            # never counted (items and pairs are different units).
             rows.append(
                 LeakRow(
                     category=leak.category,
                     check=leak.check,
-                    planted=leak.planted,
+                    planted=len(planted_pairs),
                     found=None,
                     status="not attributed",
                     basis="count",
-                    note="check lists no pairs; see the cross-split total below",
+                    note="check lists no pairs, so the row cannot be attributed",
                 )
             )
             continue
 
-        note = f"check count {total_count}"
-        if leak.check == "labels":
-            note = f"check count {total_count} (items in conflict groups; planted counts pairs)"
+        # n-gram: the planted count is the number of quoted test items, and the check counts
+        # test items with a match, so both sides are items.
         rows.append(
             LeakRow(
                 category=leak.category,
@@ -186,7 +201,7 @@ def compare_planted(manifest: DemoManifest, report: AuditReport) -> list[LeakRow
                 found=total_count,
                 status=_status(total_count, leak.planted),
                 basis="count",
-                note=note,
+                note=f"items: check count {total_count} of {leak.planted} quoted test items",
             )
         )
 

@@ -26,13 +26,15 @@ from __future__ import annotations
 import hashlib
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
-from typing import Final, Literal
+from typing import Any, Final, Literal
 
 from benchlint.normalize import FIELD_SEPARATOR, normalize_fields
 from benchlint.schema import ExamplePair, Finding, Record
 
 EXAMPLE_LIMIT: Final = 5
 """Maximum number of ``ExamplePair`` objects per finding."""
+PAIR_LIMIT: Final = 5000
+"""Most duplicate pairs listed per finding in ``details["pairs"]``."""
 TEXT_LIMIT: Final = 200
 """Characters kept from each example text."""
 DIGEST_SIZE: Final = 16
@@ -152,6 +154,7 @@ def _within_split(
     n_groups = 0
     largest = 0
     examples: list[ExamplePair] = []
+    pairs: list[list[Any]] = []
     for members in groups.values():
         if len(members) < 2:
             continue
@@ -162,6 +165,8 @@ def _within_split(
         for dup in members[1:]:
             if len(examples) < EXAMPLE_LIMIT:
                 examples.append(example_pair(first, dup, text_fields, 1.0))
+            if len(pairs) < PAIR_LIMIT:
+                pairs.append([first.id, dup.id, 1.0])
 
     denominator = len(items)
     return Finding(
@@ -174,6 +179,8 @@ def _within_split(
         examples=examples,
         details={
             "scope": "within",
+            "pairs": pairs,
+            "pairs_truncated": redundant > len(pairs),
             "n_groups": n_groups,
             "largest_group": largest,
             "skipped_empty": skipped,
@@ -203,6 +210,7 @@ def _across_splits(
 
     count = 0
     examples: list[ExamplePair] = []
+    pairs: list[list[Any]] = []
     for key, rec in items_second:
         partner = first_index.get(key)
         if partner is None:
@@ -210,6 +218,8 @@ def _across_splits(
         count += 1
         if len(examples) < EXAMPLE_LIMIT:
             examples.append(example_pair(partner, rec, text_fields, 1.0))
+        if len(pairs) < PAIR_LIMIT:
+            pairs.append([partner.id, rec.id, 1.0])
 
     denominator = len(items_second)
     rate = _rate(count, denominator)
@@ -231,6 +241,8 @@ def _across_splits(
         examples=examples,
         details={
             "scope": "cross",
+            "pairs": pairs,
+            "pairs_truncated": count > len(pairs),
             "measured_split": second,
             "reference_split": first,
             "reverse_count": reverse_count,

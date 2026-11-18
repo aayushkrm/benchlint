@@ -41,7 +41,7 @@ from benchlint.experiments import (  # noqa: E402
     write_json,
 )
 from benchlint.io import load_dataset  # noqa: E402
-from benchlint.normalize import normalize_text  # noqa: E402
+from benchlint.normalize import word_tokens  # noqa: E402
 from benchlint.report import wilson_interval  # noqa: E402
 from benchlint.schema import DatasetSpec, NearConfig, Record, SourceSpec  # noqa: E402
 
@@ -180,7 +180,7 @@ def plan_and_build(texts: list[str], n_base: int) -> dict[str, Any]:
         plan.append(_plan_row(i, "near", edit, size, base_texts[i]))
     length_base = {"short": 0, "medium": 0, "long": 0}
     for t in base_texts:
-        length_base[length_bin(len(normalize_text(t).split()))] += 1
+        length_base[length_bin(len(word_tokens(t)))] += 1
     return {
         "originals": originals,
         "copies": copies,
@@ -200,7 +200,7 @@ def plan_and_build(texts: list[str], n_base: int) -> dict[str, Any]:
 
 
 def _plan_row(i: int, role: str, edit: str, size: int, original: str) -> dict[str, Any]:
-    n_words = len(normalize_text(original).split())
+    n_words = len(word_tokens(original))
     return {
         "base": i,
         "role": role,

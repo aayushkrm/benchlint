@@ -102,3 +102,20 @@ def test_separator_is_not_normalised_away_inside_a_field_join() -> None:
     assert normalize_fields({"x": "a b", "y": "c"}, ["x", "y"]) != normalize_fields(
         {"x": "a", "y": "b c"}, ["x", "y"]
     )
+
+
+def test_word_tokens_split_on_punctuation_and_keep_symbols() -> None:
+    from benchlint.normalize import word_tokens
+
+    assert word_tokens("well-known") == ["well", "known"]
+    assert word_tokens("U.S. Don't") == ["u", "s", "don", "t"]
+    # "$" and "+" are symbols (kept); "%" is punctuation (Po), so it becomes a space.
+    assert word_tokens("cost $5 + 3%") == ["cost", "$5", "+", "3"]
+    assert word_tokens("ab 12 cd", mask_numbers=True) == ["ab", "0", "cd"]
+    assert word_tokens("") == []
+
+
+def test_exact_key_normalisation_is_unchanged_by_word_tokens() -> None:
+    from benchlint.normalize import normalize_text
+
+    assert normalize_text("well-known") == "wellknown"
