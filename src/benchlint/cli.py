@@ -10,6 +10,7 @@ import functools
 import json
 import time
 from collections.abc import Callable, Iterator, Sequence
+from contextvars import ContextVar
 from dataclasses import asdict
 from pathlib import Path
 from typing import Annotated, NoReturn, ParamSpec
@@ -28,6 +29,7 @@ from benchlint.io import load_dataset, load_dataset_detailed
 from benchlint.report import (
     FAIL_ON_NONE,
     SEVERITIES,
+    annotate_intervals,
     collect_env_info,
     exceeds_fail_on,
     findings_exceed,
@@ -66,23 +68,40 @@ app.add_typer(canary_app, name="canary")
 P = ParamSpec("P")
 
 
+_JSON_OUTPUT: ContextVar[bool] = ContextVar("benchlint_json_output", default=False)
+
+
 def _fail(message: str) -> NoReturn:
-    """Print an error to stderr and exit with code 2."""
-    typer.echo(f"error: {message}", err=True)
+    """Report a usage or runtime error and exit with code 2.
+
+    With ``--json`` the error goes to stdout as ``{"error": ..., "exit_code": 2}``, the same
+    shape as passk and quantgate, so a machine reader always gets one JSON object on stdout.
+    Otherwise the message goes to stderr as ``error: ...``.
+    """
+    if _JSON_OUTPUT.get():
+        typer.echo(json.dumps({"error": message, "exit_code": EXIT_ERROR}, indent=2))
+    else:
+        typer.echo(f"error: {message}", err=True)
     raise typer.Exit(EXIT_ERROR)
 
 
 def _guard(fn: Callable[P, None]) -> Callable[P, None]:
-    """Map any unexpected exception to a message and exit code 2 (runtime error)."""
+    """Map any unexpected exception to a message and exit code 2 (runtime error).
+
+    Commands that take ``--json`` (a ``json_output`` argument) report their errors as JSON.
+    """
 
     @functools.wraps(fn)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> None:
+        token = _JSON_OUTPUT.set(bool(kwargs.get("json_output", False)))
         try:
             fn(*args, **kwargs)
         except typer.Exit:
             raise
         except Exception as exc:
             _fail(f"{type(exc).__name__}: {exc}")
+        finally:
+            _JSON_OUTPUT.reset(token)
 
     return wrapper
 
@@ -205,6 +224,7 @@ def run_audit(spec: AuditSpec, base_dir: Path) -> AuditReport:
                 cfg.ngram,
             )
         )
+    annotate_intervals(findings)
     env = collect_env_info()
     env["checks"] = cfg.model_dump(mode="json")
     env["data_splits"] = [asdict(x) for x in loads]
@@ -242,6 +262,7 @@ def _emit_check(
     fail_on: str,
 ) -> None:
     """Print check results (JSON list or text lines) and exit 1 if they reach ``fail_on``."""
+    annotate_intervals(findings)
     if json_output:
         typer.echo(
             json.dumps(

@@ -459,3 +459,63 @@ def test_demo_writes_all_report_files(demo_run: tuple[Path, Any]) -> None:
         assert (out / name).is_file(), name
     assert (out / "data" / "train.jsonl").is_file()
     assert (out / "reference" / "reference.jsonl").is_file()
+
+
+# --- review B1, B5 and fail-on none ----------------------------------------------------------
+
+
+def test_json_error_is_one_json_object_on_stdout(tmp_path: Path) -> None:
+    """With --json, an error is printed to stdout as {"error", "exit_code": 2}."""
+    result = runner.invoke(app, ["audit", str(tmp_path / "missing.yaml"), "--json"])
+    assert result.exit_code == 2
+    payload = json.loads(result.stdout)
+    assert payload["exit_code"] == 2
+    assert "spec file not found" in payload["error"]
+
+
+def test_text_error_keeps_stdout_empty(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["audit", str(tmp_path / "missing.yaml")])
+    assert result.exit_code == 2
+    assert result.stdout == ""
+
+
+def test_check_json_error_is_json(tmp_path: Path) -> None:
+    result = runner.invoke(app, ["check", "near", str(tmp_path / "missing.yaml"), "--json"])
+    assert result.exit_code == 2
+    assert json.loads(result.stdout)["exit_code"] == 2
+
+
+def test_fail_on_none_exits_0_even_with_a_high_finding(
+    tmp_path: Path, fakes: dict[str, Any]
+) -> None:
+    fakes["exact"] = [_finding("high", count=2)]
+    spec = _spec_yaml(tmp_path / "spec.yaml")
+    result = runner.invoke(
+        app, ["audit", str(spec), "--out", str(tmp_path / "out"), "--fail-on", "none"]
+    )
+    assert result.exit_code == 0, result.output
+
+
+def test_fail_on_none_is_accepted_by_check_commands(tmp_path: Path, fakes: dict[str, Any]) -> None:
+    fakes["near"] = [_finding("high", count=2, check="near")]
+    spec = _spec_yaml(tmp_path / "spec.yaml")
+    result = runner.invoke(app, ["check", "near", str(spec), "--fail-on", "none"])
+    assert result.exit_code == 0, result.output
+
+
+def test_unknown_fail_on_value_is_a_usage_error(tmp_path: Path, fakes: dict[str, Any]) -> None:
+    spec = _spec_yaml(tmp_path / "spec.yaml")
+    result = runner.invoke(app, ["audit", str(spec), "--fail-on", "critical", "--json"])
+    assert result.exit_code == 2
+    assert "none" in json.loads(result.stdout)["error"]
+
+
+def test_json_report_carries_rate_intervals(tmp_path: Path, fakes: dict[str, Any]) -> None:
+    fakes["exact"] = [_finding("low", count=1)]
+    spec = _spec_yaml(tmp_path / "spec.yaml")
+    result = runner.invoke(app, ["audit", str(spec), "--out", str(tmp_path / "out")])
+    assert result.exit_code in (0, 1), result.output
+    report = json.loads((tmp_path / "out" / "report.json").read_text(encoding="utf-8"))
+    finding = report["findings"][0]
+    assert 0.0 <= finding["details"]["rate_ci_low"] <= finding["rate"]
+    assert finding["rate"] <= finding["details"]["rate_ci_high"] <= 1.0

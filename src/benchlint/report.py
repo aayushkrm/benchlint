@@ -37,6 +37,18 @@ _SYNTHETIC_BANNER = (
 )
 
 
+def annotate_intervals(findings: Sequence[Finding]) -> None:
+    """Store the 95% Wilson interval of each finding's rate in its ``details``.
+
+    Keys ``rate_ci_low`` and ``rate_ci_high`` make the JSON report carry the same intervals
+    the Markdown and HTML reports show.
+    """
+    for f in findings:
+        lo, hi = wilson_interval(f.count, f.denominator)
+        f.details["rate_ci_low"] = round(lo, 6)
+        f.details["rate_ci_high"] = round(hi, 6)
+
+
 def severity_rank(level: str) -> int:
     """Position of ``level`` in ``SEVERITIES`` (higher is more severe).
 
@@ -569,6 +581,7 @@ __all__ = [
     "collect_env_info",
     "exceeds_fail_on",
     "findings_exceed",
+    "annotate_intervals",
     "is_synthetic",
     "render_html",
     "render_json",
