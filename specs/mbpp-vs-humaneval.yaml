@@ -1,21 +1,29 @@
-# DatasetSpec (benchlint). Scaffold placeholder: nothing has been downloaded.
-# Leakage scan: google-research-datasets/mbpp (full) <-> openai/openai_humaneval. Licence: CC-BY-4.0 (MBPP), MIT (HumanEval). # TODO verify licences.
-#
-# This spec audits the MBPP side. The HumanEval side is the reference corpus for the ngram
-# check (CheckConfig.ngram.reference), not a second DatasetSpec. # TODO verify field names
-#   reference source: {kind: hf, id_or_path: openai/openai_humaneval, config: null,
-#                      split_map: {test: test}}  # fields: prompt, canonical_solution
-name: mbpp-vs-humaneval
-source:
-  kind: hf
-  id_or_path: google-research-datasets/mbpp
-  config: full          # TODO verify config name
-  revision: null
-  split_map:
-    train: train        # TODO verify split names (MBPP full also has validation, test, prompt)
-    test: test
-text_fields: [text, code]
-label_field: null
-id_field: task_id       # TODO verify
-max_rows_per_split: null
-seed: 0
+# AuditSpec for google-research-datasets/mbpp (config full), checked against the HumanEval
+# prompts as an n-gram reference (decontamination). Verified against the Hub on 2026-11-19:
+# MBPP full has splits train (374), test (500), validation (90), prompt (10); columns task_id,
+# text, code, test_list, ... ; OpenAI HumanEval has one config (openai_humaneval) and one split
+# (test, 164 rows) with columns task_id, prompt, canonical_solution, test, entry_point.
+# The n-gram check uses the test split of MBPP as eval items, 13-grams, reference = HumanEval
+# prompts. Licences: MBPP CC-BY-4.0 and HumanEval MIT (both stated on their cards).
+dataset:
+  name: mbpp-vs-humaneval
+  source:
+    kind: hf
+    id_or_path: google-research-datasets/mbpp
+    config: full
+    revision: null
+    split_map: {train: train, test: test}
+  text_fields: [text, code]
+  label_field: null
+  id_field: task_id
+  max_rows_per_split: null
+  seed: 0
+checks:
+  exact: true
+  near: {threshold: 0.8, num_perm: 128, shingle: 5, lsh_threshold: 0.7}
+  labels: false
+  ngram:
+    n: 13
+    reference:
+      - {kind: hf, id_or_path: openai/openai_humaneval, config: null, revision: null, split_map: {test: test}}
+    reference_fields: [prompt]

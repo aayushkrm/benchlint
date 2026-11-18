@@ -26,6 +26,7 @@ from benchlint.checks.shortcut import run_shortcut_checks
 from benchlint.demo_data import build_demo, compare_planted
 from benchlint.io import load_dataset, load_dataset_detailed
 from benchlint.report import (
+    FAIL_ON_NONE,
     SEVERITIES,
     collect_env_info,
     exceeds_fail_on,
@@ -87,9 +88,10 @@ def _guard(fn: Callable[P, None]) -> Callable[P, None]:
 
 
 def _check_fail_on(fail_on: str) -> None:
-    """Reject an unknown severity as a usage error."""
-    if fail_on not in SEVERITIES:
-        _fail(f"--fail-on must be one of {', '.join(SEVERITIES)}, got {fail_on!r}")
+    """Reject an unknown severity as a usage error. ``none`` disables the finding exit code."""
+    allowed = (*SEVERITIES, FAIL_ON_NONE)
+    if fail_on not in allowed:
+        _fail(f"--fail-on must be one of {', '.join(allowed)}, got {fail_on!r}")
 
 
 def load_audit_spec(path: Path) -> AuditSpec:
@@ -143,13 +145,18 @@ def _eval_records(splits: dict[str, list[Record]], test_split: str | None) -> li
     return _all_records(splits)
 
 
-def _reference_texts(sources: Sequence[SourceSpec], base_dir: Path) -> Iterator[str]:
-    """Stream the text of every reference record. Each reference row must have ``text``."""
+def _reference_texts(
+    sources: Sequence[SourceSpec], base_dir: Path, fields: Sequence[str] = (REFERENCE_TEXT_FIELD,)
+) -> Iterator[str]:
+    """Stream the text of every reference record: ``fields`` joined with a space.
+
+    Each reference row must contain every field in ``fields``.
+    """
     for src in sources:
         ref_spec = DatasetSpec(
             name="reference",
             source=src,
-            text_fields=[REFERENCE_TEXT_FIELD],
+            text_fields=list(fields),
             label_field=None,
             id_field=None,
             max_rows_per_split=None,
@@ -157,7 +164,7 @@ def _reference_texts(sources: Sequence[SourceSpec], base_dir: Path) -> Iterator[
         )
         for recs in load_dataset(ref_spec, base_dir=base_dir).values():
             for rec in recs:
-                yield rec.fields.get(REFERENCE_TEXT_FIELD, "")
+                yield " ".join(rec.fields[f] for f in fields)
 
 
 def run_audit(spec: AuditSpec, base_dir: Path) -> AuditReport:
@@ -179,7 +186,7 @@ def run_audit(spec: AuditSpec, base_dir: Path) -> AuditReport:
         findings += find_exact_duplicates(records, ds.text_fields)
     findings += find_near_duplicates(records, ds.text_fields, cfg.near, seed=ds.seed)
     if cfg.labels and ds.label_field is not None:
-        findings += find_label_conflicts(records, ds.text_fields, near=cfg.near)
+        findings += find_label_conflicts(records, ds.text_fields, near=cfg.near, seed=ds.seed)
     shortcuts: list[ShortcutResult] = []
     if train_split is not None and test_split is not None and cfg.shortcut.views:
         shortcuts = run_shortcut_checks(
@@ -193,7 +200,7 @@ def run_audit(spec: AuditSpec, base_dir: Path) -> AuditReport:
         findings.append(
             find_ngram_overlap(
                 _eval_records(splits, test_split),
-                _reference_texts(cfg.ngram.reference, base_dir),
+                _reference_texts(cfg.ngram.reference, base_dir, cfg.ngram.reference_fields),
                 ds.text_fields,
                 cfg.ngram,
             )
@@ -279,7 +286,7 @@ def audit(
     fail_on: Annotated[
         str,
         typer.Option(
-            "--fail-on", help="Exit 1 if a finding is at or above this: info|low|medium|high."
+            "--fail-on", help="Exit 1 if a finding is at or above this: info|low|medium|high|none."
         ),
     ] = "high",
     json_output: Annotated[
@@ -330,7 +337,7 @@ def check_exact(
     spec: Annotated[Path, typer.Argument(help="DatasetSpec YAML file.")],
     json_output: Annotated[bool, typer.Option("--json", help="Print findings as JSON.")] = False,
     fail_on: Annotated[
-        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high.")
+        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high|none.")
     ] = "high",
 ) -> None:
     """Exact duplicates within and across splits."""
@@ -351,7 +358,7 @@ def check_near(
     ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Print findings as JSON.")] = False,
     fail_on: Annotated[
-        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high.")
+        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high|none.")
     ] = "high",
 ) -> None:
     """MinHash LSH near-duplicates with exact Jaccard verification."""
@@ -388,7 +395,7 @@ def check_ngram(
     ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Print findings as JSON.")] = False,
     fail_on: Annotated[
-        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high.")
+        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high|none.")
     ] = "high",
 ) -> None:
     """13-gram overlap between eval items and a reference corpus (decontamination)."""
@@ -412,7 +419,7 @@ def check_ngram(
     _, test_split = _pick_splits(splits)
     finding = find_ngram_overlap(
         _eval_records(splits, test_split),
-        _reference_texts(sources, base),
+        _reference_texts(sources, base, ngram_cfg.reference_fields),
         audit_spec.dataset.text_fields,
         ngram_cfg,
     )
@@ -425,7 +432,7 @@ def check_shortcut(
     spec: Annotated[Path, typer.Argument(help="DatasetSpec YAML file.")],
     json_output: Annotated[bool, typer.Option("--json", help="Print results as JSON.")] = False,
     fail_on: Annotated[
-        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high.")
+        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high|none.")
     ] = "high",
 ) -> None:
     """Partial-input baselines (single field, length, numeric scan) against majority and chance."""
@@ -491,7 +498,7 @@ def demo(
         "demo_out"
     ),
     fail_on: Annotated[
-        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high.")
+        str, typer.Option("--fail-on", help="Exit 1 at or above: info|low|medium|high|none.")
     ] = "high",
     json_output: Annotated[
         bool, typer.Option("--json", help="Print the AuditReport as JSON to stdout.")

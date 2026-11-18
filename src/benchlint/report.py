@@ -26,6 +26,8 @@ from benchlint import __version__
 from benchlint.schema import AuditReport, Finding, ShortcutResult
 
 SEVERITIES: tuple[str, ...] = ("info", "low", "medium", "high")
+FAIL_ON_NONE = "none"
+"""``--fail-on none``: never exit 1 for findings (exit 0 unless there is a usage or runtime error)."""
 SHORTCUT_SEVERITY = "high"
 FORMATS: tuple[str, ...] = ("json", "md", "html")
 _REPO_DIR = Path(__file__).resolve().parents[2]
@@ -49,6 +51,8 @@ def findings_exceed(
     findings: Sequence[Finding], shortcuts: Sequence[ShortcutResult], fail_on: str
 ) -> bool:
     """True if a finding with count > 0, or a flagged shortcut, is at or above ``fail_on``."""
+    if fail_on == FAIL_ON_NONE:
+        return False
     threshold = severity_rank(fail_on)
     for f in findings:
         if f.count > 0 and severity_rank(f.severity) >= threshold:

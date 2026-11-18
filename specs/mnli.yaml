@@ -1,19 +1,33 @@
-# DatasetSpec (benchlint). Scaffold placeholder: nothing has been downloaded.
-# Known artifact: hypothesis-only baseline on the matched dev set (E2). Compare with the
-# literature value (Gururangan et al. 2018, reported about 53%, cited, not our result).
-# GLUE test labels are hidden, so only train and validation_matched are mapped.
-# TODO verify: id column name (idx) and the -1 label handling.
-name: mnli
-source:
-  kind: hf
-  id_or_path: nyu-mll/glue
-  config: mnli
-  revision: null
-  split_map:
-    train: train
-    validation: validation_matched
-text_fields: [premise, hypothesis]
-label_field: label
-id_field: idx            # TODO verify
-max_rows_per_split: 100000
-seed: 0
+# AuditSpec for nyu-mll/glue, config mnli. Verified against the Hub on 2026-11-19: splits train
+# (392702), validation_matched (9815), validation_mismatched, test_matched and test_mismatched
+# (labels hidden, -1). Only train and validation_matched are mapped. Columns premise, hypothesis,
+# label, idx. Label -1 is dropped (it appears only in the hidden test splits, kept for safety).
+# Train is capped at 100,000 rows (seeded). Known artifact: hypothesis-only baseline, E2.
+# Licence: the GLUE card defers to the licences of the source corpora (MultiNLI, per genre);
+# Hub tag "other". Check the source licences before redistributing.
+dataset:
+  name: mnli
+  source:
+    kind: hf
+    id_or_path: nyu-mll/glue
+    config: mnli
+    revision: null
+    split_map: {train: train, validation: validation_matched}
+  text_fields: [premise, hypothesis]
+  label_field: label
+  id_field: idx
+  max_rows_per_split: 100000
+  drop_label_values: [-1]
+  seed: 0
+checks:
+  exact: true
+  near: {threshold: 0.8, num_perm: 128, shingle: 5, lsh_threshold: 0.7}
+  labels: true
+  shortcut:
+    views:
+      - {name: hypothesis_only, kind: text_fields, fields: [hypothesis]}
+      - {name: hypothesis_length, kind: length, fields: [hypothesis]}
+    margin_pts: 10.0
+    n_boot: 1000
+    n_perm: 200
+    max_rows: 100000
