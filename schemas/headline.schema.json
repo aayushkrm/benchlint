@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "benchlint headline (hub standard contract)",
+  "description": "results/headline.json: numbers the portfolio hub may quote. Every value is formatted from committed full-mode results by benchlint.headline.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tool", "tagline", "quickstart", "environment", "items", "links"],
+  "properties": {
+    "schema_version": {"const": "1"},
+    "tool": {"const": "benchlint"},
+    "tagline": {"type": "string", "minLength": 1},
+    "quickstart": {"type": "string", "minLength": 1},
+    "environment": {"type": "string", "minLength": 1},
+    "items": {
+      "type": "array",
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "value", "detail", "n", "ci", "synthetic", "featured", "source"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "label": {"type": "string", "minLength": 1},
+          "value": {"type": "string", "minLength": 1},
+          "detail": {"type": "string"},
+          "n": {"type": ["integer", "null"], "minimum": 0},
+          "ci": {"type": ["string", "null"]},
+          "synthetic": {"type": "boolean"},
+          "featured": {"type": "boolean"},
+          "source": {"type": "string", "pattern": "^results/.+\\.json$"}
+        }
+      }
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "site", "release"],
+      "properties": {
+        "repo": {"type": "string", "pattern": "^https://"},
+        "site": {"type": "string", "pattern": "^https://"},
+        "release": {"type": ["string", "null"]}
+      }
+    }
+  }
+}
