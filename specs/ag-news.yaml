@@ -1,0 +1,18 @@
+# DatasetSpec (benchlint). Scaffold placeholder: nothing has been downloaded.
+# Used for the planted-leak calibration base (E1, a seeded 2,000-item test subset, selected
+# in scripts/calibrate.py, not here) and for the train <-> test leakage scan (E3).
+# Licence: see README. # TODO verify licence.
+name: ag-news
+source:
+  kind: hf
+  id_or_path: fancyzhx/ag_news
+  config: null
+  revision: null
+  split_map:
+    train: train
+    test: test
+text_fields: [text]
+label_field: label
+id_field: null
+max_rows_per_split: null
+seed: 0

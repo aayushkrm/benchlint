@@ -1,0 +1,19 @@
+# DatasetSpec (benchlint). Scaffold placeholder: nothing has been downloaded.
+# Known artifact: hypothesis-only baseline on the matched dev set (E2). Compare with the
+# literature value (Gururangan et al. 2018, reported about 53%, cited, not our result).
+# GLUE test labels are hidden, so only train and validation_matched are mapped.
+# TODO verify: id column name (idx) and the -1 label handling.
+name: mnli
+source:
+  kind: hf
+  id_or_path: nyu-mll/glue
+  config: mnli
+  revision: null
+  split_map:
+    train: train
+    validation: validation_matched
+text_fields: [premise, hypothesis]
+label_field: label
+id_field: idx            # TODO verify
+max_rows_per_split: 100000
+seed: 0

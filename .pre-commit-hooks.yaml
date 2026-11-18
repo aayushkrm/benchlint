@@ -1,0 +1,9 @@
+# Hook for other repositories: run benchlint on DatasetSpec files.
+- id: benchlint-audit
+  name: benchlint audit
+  description: Audit benchmark dataset specs for leakage, near-duplicates, label conflicts and shortcuts.
+  entry: benchlint audit
+  language: python
+  files: ^specs/.*\.ya?ml$
+  pass_filenames: true
+  types: [yaml]

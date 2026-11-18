@@ -1,0 +1,30 @@
+# Composite GitHub Action (placeholder). Usage in another repo:
+#   - uses: aayushkrm/benchlint@v0.1.0
+#     with:
+#       spec: specs/gsm8k.yaml
+#       fail-on: high
+name: benchlint audit
+description: Audit a benchmark dataset spec with benchlint and fail on findings at or above a severity.
+inputs:
+  spec:
+    description: Path to a DatasetSpec YAML file.
+    required: true
+  fail-on:
+    description: Exit 1 if a finding is at or above this severity (info, low, medium, high).
+    required: false
+    default: high
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Install benchlint from this action's source
+      shell: bash
+      run: python -m pip install "$GITHUB_ACTION_PATH"
+    - name: Run benchlint audit
+      shell: bash
+      env:
+        BENCHLINT_SPEC: ${{ inputs.spec }}
+        BENCHLINT_FAIL_ON: ${{ inputs.fail-on }}
+      run: benchlint audit "$BENCHLINT_SPEC" --fail-on "$BENCHLINT_FAIL_ON"

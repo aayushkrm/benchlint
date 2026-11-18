@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use benchlint, please cite it using these metadata."
+title: "benchlint"
+type: software
+version: 0.1.0
+license: MIT
+authors:
+  - family-names: Kumar
+    given-names: Ayush
+repository-code: "https://github.com/aayushkrm/benchlint"
+abstract: "A linter for ML benchmarks: finds train/test leakage, near-duplicates, label conflicts and shortcut features."
+keywords:
+  - benchmark
+  - data leakage
+  - contamination
+  - evaluation

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+
+# Tool caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Local outputs
+reports/
+demo_out/
+site/dist/
+
+# Model weights and raw generations stay local (DECISION.md section 5, section 6 rule 10)
+*.gguf
+results/**/raw/
+*.raw.jsonl
+
+# Data caches
+data_cache/
+.cache/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
