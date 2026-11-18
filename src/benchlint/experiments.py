@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import math
 import os
 import tempfile
 from collections.abc import Sequence
@@ -125,7 +126,197 @@ def _edit_label(edit: str) -> str:
     )
 
 
-def calibration_tables(calib: dict[str, Any] | None) -> list[Table]:
+def write_e1_summary(e1_dir: Path) -> dict[str, Any]:
+    """Compute ``e1_dir/summary.json`` from the stored recall stage. No detector is run.
+
+    Reads ``recall.json`` (planted pairs) and ``calibration.json`` (threshold and shingle size),
+    and refuses to combine stage files whose config hashes differ.
+    """
+    recall = read_json(e1_dir / "recall.json")
+    calib = read_json(e1_dir / "calibration.json")
+    if recall is None or calib is None:
+        raise FileNotFoundError(f"{e1_dir} needs recall.json and calibration.json")
+    if recall.get("config_hash") != calib.get("config_hash"):
+        raise ValueError("recall.json and calibration.json come from different configurations")
+    settings = calib["settings"]
+    summary = e1_summary(recall, float(settings["threshold"]), int(settings["shingle"]))
+    write_json(e1_dir / "summary.json", summary)
+    return summary
+
+
+JACCARD_BINS: tuple[tuple[float, float], ...] = (
+    (0.0, 0.5),
+    (0.5, 0.6),
+    (0.6, 0.7),
+    (0.7, 0.8),
+    (0.8, 0.9),
+    (0.9, 1.0),
+)
+"""Bins of the true (exact) Jaccard of planted near pairs, for the E1 summary. The last bin
+includes 1.0. The bin edges do not depend on the threshold."""
+SHINGLE_SIZE_FOR_BOUND = 5
+BOUND_EDITS: tuple[int, ...] = (1, 3, 5, 10)
+BOUND_LENGTHS: tuple[int, ...] = (35, 50, 100)
+EDIT_BOUND_SHINGLES = 5
+"""Most shingles that one word edit can change. A word touches at most five 5-gram windows."""
+
+
+def _jaccard_bin_label(index: int) -> str:
+    lo, hi = JACCARD_BINS[index]
+    close = "]" if index == len(JACCARD_BINS) - 1 else ")"
+    return f"[{lo:.1f}, {hi:.1f}{close}"
+
+
+def _jaccard_bin_index(value: float) -> int:
+    for i, (lo, hi) in enumerate(JACCARD_BINS):
+        last = i == len(JACCARD_BINS) - 1
+        if lo <= value < hi or (last and value == hi):
+            return i
+    return len(JACCARD_BINS) - 1
+
+
+def jaccard_lower_bound(n_words: int, edits: int, shingle: int = SHINGLE_SIZE_FOR_BOUND) -> float:
+    """Lower bound on the Jaccard of a text and a copy with ``edits`` word edits.
+
+    With ``S = n_words - shingle + 1`` shingles, the copy keeps at least ``S - 5k`` shared
+    shingles and has at most ``S + 5k`` in the union, so Jaccard is at least
+    ``(S - 5k) / (S + 5k)``. This is arithmetic, not a measurement, and it is clamped at 0.
+    """
+    shingles = n_words - shingle + 1
+    if shingles <= 0:
+        return 0.0
+    destroyed = EDIT_BOUND_SHINGLES * edits
+    return max(0.0, (shingles - destroyed) / (shingles + destroyed))
+
+
+def guaranteed_length(edits: int, threshold: float, shingle: int = SHINGLE_SIZE_FOR_BOUND) -> int:
+    """Fewest words for which the bound above already reaches ``threshold`` for ``edits`` edits.
+
+    Solves ``(S - 5k) / (S + 5k) >= t`` for ``S``: ``S >= 5k (1 + t) / (1 - t)``. For a threshold
+    of 0.8 this is ``S >= 45k``, so ``n_words >= 45k + shingle - 1``.
+    """
+    needed_shingles = EDIT_BOUND_SHINGLES * edits * (1 + threshold) / (1 - threshold)
+    return math.ceil(round(needed_shingles, 9)) + shingle - 1
+
+
+def _near_planted(recall: dict[str, Any]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for row in recall["planted_pairs"]:
+        orig_id, copy_id, role, edit, size, length, jac, found = row
+        if role != "near":
+            continue
+        out.append(
+            {
+                "edit": edit,
+                "size": size,
+                "length": length,
+                "jaccard": float(jac),
+                "found": bool(found),
+            }
+        )
+    return out
+
+
+def _matches(point: dict[str, Any], edit: str, size: Any) -> bool:
+    edit_ok = edit == "all" or point["edit"] == edit
+    size_ok = size == "all" or point["size"] == size
+    return bool(edit_ok and size_ok)
+
+
+def _proportion(found: int, n: int) -> dict[str, Any]:
+    lo, hi = wilson_interval(found, n)
+    return {
+        "n": n,
+        "found": found,
+        "recall": found / n if n else 0.0,
+        "ci_low": lo,
+        "ci_high": hi,
+        "low_n": n < LOW_N,
+    }
+
+
+def e1_summary(
+    recall: dict[str, Any], threshold: float, shingle: int = SHINGLE_SIZE_FOR_BOUND
+) -> dict[str, Any]:
+    """Summary of the E1 recall stage, computed from its planted pairs (no new detector run).
+
+    The conditional recall is the share of planted near pairs found, among those whose TRUE
+    exact Jaccard is at or above ``threshold``. Those pairs are the only ones the detector
+    can report, so this is the LSH recall at the threshold. Pairs below the threshold are
+    counted separately; the detector cannot report them, so they are never a retrieval miss.
+    The true Jaccard comes from the stored exact value (shingle sets), not from the detector.
+    """
+    near = _near_planted(recall)
+    above = [p for p in near if p["jaccard"] >= threshold]
+    below = [p for p in near if p["jaccard"] < threshold]
+    found_below = sum(1 for p in below if p["found"])
+    missed_above = sum(1 for p in above if not p["found"])
+
+    by_bin: list[dict[str, Any]] = []
+    for i in range(len(JACCARD_BINS)):
+        members = [p for p in near if _jaccard_bin_index(p["jaccard"]) == i]
+        by_bin.append(
+            {
+                "bin": _jaccard_bin_label(i),
+                "low": JACCARD_BINS[i][0],
+                "high": JACCARD_BINS[i][1],
+                **_proportion(sum(1 for p in members if p["found"]), len(members)),
+            }
+        )
+
+    by_edit_size: list[dict[str, Any]] = []
+    for edit in ("all", "substitution", "deletion", "insertion"):
+        for size in ("all", 1, 3, 5, 10):
+            members = [p for p in above if _matches(p, edit, size)]
+            all_members = [p for p in near if _matches(p, edit, size)]
+            by_edit_size.append(
+                {
+                    "edit": edit,
+                    "size": size,
+                    "planted_all": len(all_members),
+                    "found_all": sum(1 for p in all_members if p["found"]),
+                    "lsh_recall": _proportion(sum(1 for p in members if p["found"]), len(members)),
+                }
+            )
+
+    rows: list[dict[str, Any]] = []
+    for edits in BOUND_EDITS:
+        lengths = {str(n): round(jaccard_lower_bound(n, edits, shingle), 4) for n in BOUND_LENGTHS}
+        rows.append(
+            {
+                "edits": edits,
+                "guaranteed_length_words": guaranteed_length(edits, threshold, shingle),
+                "lower_bound_by_length": lengths,
+            }
+        )
+
+    return {
+        "experiment": "E1",
+        "record": "summary",
+        "mode": recall["mode"],
+        "config_hash": recall["config_hash"],
+        "threshold": threshold,
+        "shingle": shingle,
+        "near_planted": len(near),
+        "all_near": _proportion(sum(1 for p in near if p["found"]), len(near)),
+        "lsh_recall_at_threshold": _proportion(sum(1 for p in above if p["found"]), len(above)),
+        "below_threshold": _proportion(found_below, len(below)),
+        "found_below_threshold": found_below,
+        "missed_at_or_above_threshold": missed_above,
+        "by_true_jaccard": by_bin,
+        "by_edit_size": by_edit_size,
+        "bound": {
+            "shingle": shingle,
+            "rule": "lower bound (S - 5k) / (S + 5k), S = words - shingle + 1; arithmetic only",
+            "lengths": list(BOUND_LENGTHS),
+            "rows": rows,
+        },
+    }
+
+
+def calibration_tables(
+    calib: dict[str, Any] | None, summary: dict[str, Any] | None = None
+) -> list[Table]:
     """The E1 tables: recall by edit and size, the exact copies, FPR, and recall by length."""
     if calib is None:
         return []
@@ -173,7 +364,7 @@ def calibration_tables(calib: dict[str, Any] | None) -> list[Table]:
             length_rows.append(tuple(cells))
     bins = calib["length_bins"]
     labels = calib["settings"]["length_bins"]
-    return [
+    base_tables: list[Table] = [
         Table(
             title="E1 recall by edit type and size",
             headers=(
@@ -221,6 +412,98 @@ def calibration_tables(calib: dict[str, Any] | None) -> list[Table]:
             ),
         ),
     ]
+    if summary is None:
+        return base_tables
+    return [base_tables[0], *_summary_tables(summary), *base_tables[1:]]
+
+
+def _summary_tables(summary: dict[str, Any]) -> list[Table]:
+    """E1 tables computed by the summary step: LSH recall, recall by true Jaccard, bound."""
+    t = summary["threshold"]
+    conditional_rows: list[tuple[str, ...]] = []
+    for row in summary["by_edit_size"]:
+        ci = row["lsh_recall"]
+        conditional_rows.append(
+            (
+                _edit_label(row["edit"]) if row["edit"] != "all" else "all edits",
+                "all" if row["size"] == "all" else str(row["size"]),
+                str(row["planted_all"]),
+                str(ci["n"]),
+                f"{ci['found']}/{ci['n']}",
+                (
+                    "n/a: no planted pairs at or above the threshold"
+                    if ci["n"] == 0
+                    else f"{pct(ci['recall'])} [{pct(ci['ci_low'])}, {pct(ci['ci_high'])}]"
+                    + (" (low n)" if ci["low_n"] else "")
+                ),
+            )
+        )
+    conditional = Table(
+        title=f"E1 detector recall conditional on true Jaccard >= {t} (LSH recall)",
+        headers=(
+            "Edit",
+            "Size (words)",
+            "Planted near pairs",
+            "With true Jaccard >= threshold",
+            "Found / those pairs",
+            "LSH recall [95% CI]",
+        ),
+        rows=tuple(conditional_rows),
+        note=(
+            f"Only pairs whose exact Jaccard is at or above {t} can be reported, so this is the "
+            "recall of the retrieval step among pairs the detector is allowed to report. Pairs "
+            f"below {t} are not counted here; the detector cannot report them by design. "
+            f"Above-threshold pairs missed by retrieval: {summary['missed_at_or_above_threshold']}. "
+            f"Below-threshold pairs reported: {summary['found_below_threshold']} (must be 0)."
+        ),
+    )
+    bins = Table(
+        title="E1 recall by true Jaccard bin",
+        headers=("True Jaccard", "Planted near pairs", "Found", "Recall [95% CI]"),
+        rows=tuple(
+            (
+                b["bin"],
+                str(b["n"]),
+                str(b["found"]),
+                f"{pct(b['recall'])} [{pct(b['ci_low'])}, {pct(b['ci_high'])}]"
+                + (" (low n)" if b["low_n"] else ""),
+            )
+            for b in summary["by_true_jaccard"]
+        ),
+        note=(
+            "True Jaccard is the exact Jaccard of the planted pair's 5-word shingle sets, "
+            "computed without the detector. Bins do not depend on the threshold."
+        ),
+    )
+    bound = summary["bound"]
+    lengths = bound["lengths"]
+    bound_rows = tuple(
+        (
+            str(row["edits"]),
+            str(row["guaranteed_length_words"]),
+            *(f"{row['lower_bound_by_length'][str(n)]:.3f}" for n in lengths),
+        )
+        for row in bound["rows"]
+    )
+    arithmetic = Table(
+        title="Why short texts with word edits fall below the threshold (arithmetic, not measured)",
+        headers=(
+            "Word edits k",
+            "Length that guarantees the threshold (words)",
+            *(f"Jaccard lower bound at {n} words" for n in lengths),
+        ),
+        rows=bound_rows,
+        note=(
+            f"With {bound['shingle']}-word shingles, a text of n words has S = n - "
+            f"{bound['shingle'] - 1} shingles. One word edit changes at most five of them, so "
+            "Jaccard is at least (S - 5k) / (S + 5k). For a threshold of 0.8 this needs "
+            "S >= 45k, that is n >= 45k + 4 words. Most base items in this run fall in the "
+            "short and medium length bins (base counts in the length table), so a single word "
+            "edit can take a typical item below the threshold even when the detector works. "
+            "Shingle size and threshold are the knobs; see docs/limitations.md."
+        ),
+    )
+    return [conditional, bins, arithmetic]
 
 
 def findings_tables(e2: list[dict[str, Any]], e3: dict[str, Any] | None) -> list[Table]:
@@ -344,7 +627,11 @@ def html_table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
     )
 
 
-def calibration_block(calib: dict[str, Any] | None, env: dict[str, Any] | None) -> str:
+def calibration_block(
+    calib: dict[str, Any] | None,
+    env: dict[str, Any] | None,
+    summary: dict[str, Any] | None = None,
+) -> str:
     """README block for E1: a source line, the synthetic label, and the tables."""
     if calib is None:
         return NO_RESULTS
@@ -354,7 +641,7 @@ def calibration_block(calib: dict[str, Any] | None, env: dict[str, Any] | None) 
         "in `results/e1/env.json`). Pre-registered in `docs/prereg.md`, E1."
     )
     return "\n\n".join(
-        [header, f"**{SYNTHETIC_EDITS_NOTE}**", tables_markdown(calibration_tables(calib))]
+        [header, f"**{SYNTHETIC_EDITS_NOTE}**", tables_markdown(calibration_tables(calib, summary))]
     )
 
 
@@ -379,10 +666,13 @@ def render_index_html(
     e2: list[dict[str, Any]],
     e3: dict[str, Any] | None,
     e3_links: Sequence[tuple[str, str, str]],
+    summary: dict[str, Any] | None = None,
 ) -> str:
     """The static site index: E1, E2 and E3 tables, and links to per-dataset reports."""
     e1_html = (
-        tables_html(calibration_tables(calib)) if calib else f"<p>{html.escape(NO_RESULTS)}</p>"
+        tables_html(calibration_tables(calib, summary))
+        if calib
+        else f"<p>{html.escape(NO_RESULTS)}</p>"
     )
     findings = tables_html(findings_tables(e2, e3))
     e2_html = findings if findings else f"<p>{html.escape(NO_RESULTS)}</p>"

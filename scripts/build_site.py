@@ -55,7 +55,7 @@ def build(results_dir: Path, out_dir: Path) -> list[Path]:
 
     index = out_dir / "index.html"
     index.write_text(
-        render_index_html(TITLE, res["calib"], res["e2"], e3, links),
+        render_index_html(TITLE, res["calib"], res["e2"], e3, links, res["e1_summary"]),
         encoding="utf-8",
     )
     written.append(index)

@@ -1,5 +1,5 @@
 # Run `make help`-style targets from the repo root. Requires uv (https://docs.astral.sh/uv/).
-.PHONY: setup lint fmt type test demo results report check-results site release
+.PHONY: setup lint fmt type test demo results summary report check-results site release
 
 setup:
 	uv venv -p 3.11 .venv
@@ -29,6 +29,10 @@ results:
 	uv run python scripts/calibrate.py
 	uv run python scripts/run_e2.py
 	uv run python scripts/run_e3.py
+
+# E1 summary (LSH recall, true-Jaccard bins, length arithmetic) from the stored recall stage.
+summary:
+	uv run python scripts/summarise_e1.py
 
 # Render committed result JSON into README.md (only the results markers change).
 report:

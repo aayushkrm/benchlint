@@ -39,6 +39,7 @@ def load_results(results_dir: Path) -> dict[str, Any]:
     e2 = [load_full(results_dir / "e2" / f"{name}.json") for name in E2_DATASETS]
     return {
         "calib": load_full(results_dir / "e1" / "calibration.json"),
+        "e1_summary": load_full(results_dir / "e1" / "summary.json"),
         "env_e1": read_json(results_dir / "e1" / "env.json"),
         "e2": [r for r in e2 if r is not None],
         "env_e2": read_json(results_dir / "e2" / "env.json"),
@@ -50,7 +51,7 @@ def render_blocks(results_dir: Path) -> list[str]:
     """The two README blocks, in marker order."""
     res = load_results(results_dir)
     return [
-        calibration_block(res["calib"], res["env_e1"]),
+        calibration_block(res["calib"], res["env_e1"], res["e1_summary"]),
         findings_block(res["e2"], res["e3"], res["env_e2"]),
     ]
 

@@ -195,10 +195,14 @@ def test_check_mode_fails_when_the_readme_is_stale(tmp_path: Path) -> None:
     assert readme.read_text(encoding="utf-8").count(NO_RESULTS) == 2
 
 
-def test_committed_results_directory_has_no_full_results_yet() -> None:
-    """Until the orchestrator runs the full queue, the rendered blocks say there are none."""
+def test_rendered_blocks_follow_the_results_present() -> None:
+    """E1 says there are no results only when its calibration file is absent."""
     blocks = render_readme.render_blocks(RESULTS_DIR)
-    assert all(NO_RESULTS in b for b in blocks)
+    assert len(blocks) == 2
+    if not (RESULTS_DIR / "e1" / "calibration.json").is_file():
+        assert NO_RESULTS in blocks[0]
+    else:
+        assert NO_RESULTS not in blocks[0]
 
 
 # --- site -----------------------------------------------------------------------------------

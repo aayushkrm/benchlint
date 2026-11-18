@@ -29,7 +29,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import envinfo  # noqa: E402
-from benchlint.checks.exact import find_exact_duplicates  # noqa: E402
+from benchlint.checks.exact import exact_key, find_exact_duplicates  # noqa: E402
 from benchlint.checks.near import find_near_duplicates, jaccard, record_shingles  # noqa: E402
 from benchlint.experiments import (  # noqa: E402
     LOW_N,
@@ -38,6 +38,7 @@ from benchlint.experiments import (  # noqa: E402
     RESULTS_DIR,
     config_hash,
     read_if_same_config,
+    write_e1_summary,
     write_json,
 )
 from benchlint.io import load_dataset  # noqa: E402
@@ -248,7 +249,15 @@ def recall_stage(built: dict[str, Any], near_cfg: NearConfig) -> dict[str, Any]:
                 rows.append(_cell_row(edit, size, length, cell))
 
     exact_planted = [p for p in planted if p["role"] == "exact"]
-    exact_found = exact_finding.count
+    # Score planted pairs by the detector's own key, not by the finding's total count: the
+    # total also includes natural duplicates between the original and copy splits.
+    by_id = {r.id: r for r in records}
+    exact_found = sum(
+        1
+        for p in exact_planted
+        if (key := exact_key(by_id[p["orig_id"]].fields, ["text"])) is not None
+        and key == exact_key(by_id[p["copy_id"]].fields, ["text"])
+    )
     return {
         "roles": built["roles"],
         "length_bins": built["length_bins"],
@@ -261,6 +270,8 @@ def recall_stage(built: dict[str, Any], near_cfg: NearConfig) -> dict[str, Any]:
             **_ci(exact_found, len(exact_planted)),
         },
         "exact_check_splits": exact_finding.splits,
+        "exact_matches_total": exact_finding.count,
+        "exact_matches_unplanted": exact_finding.count - exact_found,
         "n_cross_near_pairs": len(cross.details["pairs"]),
         "n_within_near_pairs": next(
             f for f in findings if f.details["scope"] == "within_split"
@@ -450,6 +461,7 @@ def main(argv: list[str] | None = None) -> int:
         "runtime_s": round(time.perf_counter() - start, 3),
     }
     write_json(out / "calibration.json", combined)
+    write_e1_summary(out)
     write_json(out / "env.json", envinfo.collect())
     print(f"wrote {out / 'calibration.json'}", file=sys.stderr)
     return 0

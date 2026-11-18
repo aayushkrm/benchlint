@@ -17,6 +17,21 @@ What each check can and cannot show. Read before quoting a finding.
   remove it. E1 gives the measured recall for the planted edits, by edit type, size and text
   length.
 
+## Short texts and the 0.8 threshold
+
+- Word-level edits change up to five 5-gram shingles each. A text of n words has S = n - 4
+  shingles, and its copy keeps at least (S - 5k) / (S + 5k) Jaccard after k edits. For a 0.8
+  threshold this needs S >= 45k, so one edit needs about 49 words, three edits about 139, five
+  about 229 and ten about 454.
+- A text shorter than the guaranteed length for k edits (bound table) can fall below 0.8 with k edits even when retrieval works. For one edit that length is about 49 words. E1 reports
+  this in two ways: recall conditional on the true Jaccard being at or above the threshold (the
+  LSH recall), and recall by true Jaccard bin. Read the overall recall together with those.
+- Options for a user who needs short edits caught: a smaller shingle size (each word edit then
+  destroys fewer shingles, so Jaccard stays higher, at the cost of more chance matches on common
+  phrases), a lower threshold (more false positives, measured by E1's clean-pair
+  rate), or a different check. None of these is the default here, and none has been measured on
+  other data.
+
 ## Thresholds are conventions
 
 - 0.8 is the reporting threshold and 5-word shingles are the default. Other choices change the
