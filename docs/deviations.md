@@ -1,6 +1,25 @@
 # Deviations
 
-Every change of n, prompt, threshold or model is logged here with a reason.
+Every change of n, threshold, cap, method or model after a pre-registration, with the reason.
+Dates are UTC. "Pre-run" means before any full experiment run; no full run has happened yet.
 
 | Date | Item | Planned | Actual | Reason |
 |---|---|---|---|---|
+| 2026-11-19 | Schema: optional fields | none | `DatasetSpec.drop_label_values` (default []), `NearConfig.lsh_threshold` (default 0.7), `NgramConfig.reference_fields` (default ["text"]) | Needed for SNLI/MNLI labels, the LSH recall fix and the HumanEval prompt reference. All defaults keep the previous behaviour. `schemas/audit_report.schema.json` regenerated. |
+| 2026-11-19 | Label -1 handling | filter in the loader | rows with a listed label are removed before the seeded cap and before every check | SNLI's -1 marks items without a gold label. Dropping before the cap means the cap samples kept rows. |
+| 2026-11-19 | LSH retrieval threshold | 0.8 (same as reporting) | 0.7; reporting threshold stays 0.8 with exact-Jaccard verification | Synthetic probe: 1,188 of 1,216 pairs at Jaccard 0.86 or above retrieved at 0.8, 1,216 of 1,216 at 0.7. The demo missed one planted pair at 0.8 and finds all 39 at 0.7. |
+| 2026-11-19 | Near tokenisation | private `_norm` (punctuation to spaces) | `normalize_text` for exact keys; `word_tokens` (punctuation to spaces) for shingles, labels and n-grams | Review B6: deleting punctuation merged words. See `docs/design.md`. Amendment in `docs/prereg.md`. |
+| 2026-11-19 | Shortcut cap for SNLI and MNLI | 20,000 (the default) | 100,000 | The E2 design uses the whole 100,000-row capped train set. The default would have cut it to 20,000 silently. |
+| 2026-11-19 | E1 length bins | short under 30, medium 30 to 59, long 60 or more | short under 34, medium 34 to 40, long 41 or more (word-count tertiles of the eligible pool) | The pre-registered long bin held 2.3% of the pool, which would leave about 2 planted pairs per edit bucket. The cut points come from the pool's length distribution only, not from any detector output. Set before any full run. |
+| 2026-11-19 | E1 false-positive pairs | "10,000 clean random pairs" | 10,000 distinct pairs drawn (seed 1) from the 600 clean controls only, so no planted copy is involved | Clarification before the run: the prereg's "clean" is made precise. |
+| 2026-11-19 | Planted-vs-found table | items and pairs mixed | exact, labels and near rows are matched by pair; n-gram row compares items | Review B2: a label row showed 12 found against 6 planted pairs. |
+| 2026-11-19 | Labels check seed | default 0 | the dataset seed | Consistency with the other checks. |
+| 2026-11-19 | N-gram reference text | the `text` field only | `reference_fields` (default ["text"]) | Needed for HumanEval, whose text is in `prompt`. |
+| 2026-11-19 | Demo exit code | exit 1 by default | `--fail-on none` in the Makefile target | Planted leaks are findings; the target should finish cleanly. The CLI default is unchanged. |
+| 2026-11-19 | JSON errors | stderr text only | with `--json`, an error object on stdout | Review B1: the sibling tools already do this. |
+| 2026-11-19 | Rate intervals in JSON | rendered only | `rate_ci_low` and `rate_ci_high` in each finding's `details` | Review B5. |
+| 2026-11-19 | HF label read | `list(ds[label])` | Arrow column read, same values | Speed: 28 s down to 0.03 s on SNLI train. |
+| 2026-11-19 | E2 literature values | cited from DECISION §2.3: about 67% (SNLI) and about 53% (MNLI) | same values, marked "reported" | Exact table cells in Gururangan et al. (2018) are not yet checked against the paper. Verify before the README cites them as more than approximate. |
+| 2026-11-19 | CI | lint, mypy, pytest | plus `make check-results` | DECISION §4.4 and review B7. |
+| 2026-11-19 | Pages workflow | placeholder | builds from results when present, checks the site exists, uses configure-pages | Review x3 and DECISION §4.4. |
+| 2026-11-19 | Review items not adopted | - | B4 (labels check trusts the loader): documented in `docs/design.md` instead of a second drop option. B8 (heavy base dependencies as extras): kept, see `docs/design.md`. | The loader drop already covers B4's committed path; a second option would duplicate it. The heavy dependencies are core features. |

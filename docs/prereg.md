@@ -119,7 +119,7 @@ Reported outputs: accuracy with bootstrap 95% CI, majority and chance baselines,
 p-value, and the gap in points against the reported literature value.
 
 Stop rule: if the gap exceeds 10 points, investigate once (label encoding, the -1 filter,
-tokenisation) and report both the first run and the investigated run. The classifier is not
+tokenisation) and report both the initial run and the investigated run. The classifier is not
 tuned to close the gap. A failure to match the literature is still a result. The comparison
 tests a similar shortcut. It is not a replication of the same model, since the literature used
 different hypothesis-only classifiers.
@@ -179,3 +179,16 @@ comes out, with n and CI, and log any change in `docs/deviations.md`.
 - Power: E1 has about 100 planted pairs per edit bucket and 10,000 clean pairs. E2 has about
   9,800 test items per SNLI and MNLI evaluation. E3 has all items of each split (within caps).
 - Literature gap threshold for investigation in E2: 10 points.
+
+## Amendment (2026-11-19, before any full run)
+
+Recorded in `docs/deviations.md`, with the reasons:
+
+- Near and label tokens: shingles are built from `benchlint.normalize.word_tokens` (punctuation
+  becomes a space), not from the punctuation-deleting `normalize_text`. The exact key still uses
+  `normalize_text`.
+- E1 length bins are word-count tertiles of the eligible pool (short under 34 words, medium 34 to
+  40, long 41 or more), not 30 and 60.
+- E1 false-positive pairs are drawn from the 600 clean controls.
+- The shortcut check's training cap for SNLI and MNLI is 100,000 rows.
+- Wording only: the E2 stop rule refers to the initial run (banned-word rule, DECISION section 6.9).

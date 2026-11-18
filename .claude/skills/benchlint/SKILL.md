@@ -31,7 +31,7 @@ benchlint canary scan <GUID> <paths...>
 ```
 
 Every command accepts `--json`. With `--json`, stdout carries only the JSON (status lines go to
-stderr). `audit --json` prints an AuditReport. The `check` commands print a JSON list of
+stderr). On a usage or runtime error with `--json`, stdout carries `{"error": ..., "exit_code": 2}`. `audit --json` prints an AuditReport. The `check` commands print a JSON list of
 findings (or shortcut results). `canary scan --json` prints a list of `{path, line}` hits.
 
 Spec files take two layouts. An AuditSpec has a `dataset:` mapping and an optional `checks:`
@@ -44,7 +44,7 @@ mapping. A bare DatasetSpec (as in `specs/*.yaml`) is audited with the default c
   as severity high), or a canary hit was found.
 - 2: usage or runtime error (bad option, missing file, invalid spec, check not implemented).
 
-`--fail-on` takes `info`, `low`, `medium` or `high` (default `high`). `benchlint demo` exits 1
+`--fail-on` takes `info`, `low`, `medium`, `high` or `none` (default `high`; `none` never exits 1 for findings). `benchlint demo` exits 1
 on purpose: the planted leaks are the expected findings.
 
 ## Outputs of `audit`
