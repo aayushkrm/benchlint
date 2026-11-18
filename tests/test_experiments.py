@@ -105,14 +105,13 @@ def test_smoke_results_are_never_loaded_for_rendering(tmp_path: Path) -> None:
 
 def test_no_results_text_when_nothing_is_rendered() -> None:
     assert calibration_block(None, None) == NO_RESULTS
-    assert findings_block([], None, None) == NO_RESULTS
+    assert findings_block([], None, None, []) == NO_RESULTS
 
 
 def test_calibration_block_shows_values_from_the_json_and_the_synthetic_label() -> None:
-    text = calibration_block(_calib(), {"git_sha": "0123456789abcdef"})
+    text = calibration_block(_calib())
     assert "41/100" in text
     assert "200/200" in text
-    assert "0123456789" in text
     assert SYNTHETIC_EDITS_NOTE in text
     assert "under 34 words" in text
     assert "(low n)" not in text  # the fake cells all have n >= 20 except none marked
@@ -123,7 +122,7 @@ def test_low_n_cells_are_marked() -> None:
     for row in calib["rows"]:
         if row["length"] == "long" and row["edit"] == "deletion" and row["size"] == 1:
             row["n"], row["found"], row["recall"], row["low_n"] = 4, 1, 0.25, True
-    assert "1/4 = 25.0% (low n)" in calibration_block(calib, None)
+    assert "1/4 = 25.0% (low n)" in calibration_block(calib)
 
 
 def test_findings_block_reports_errors_and_reported_literature_values() -> None:
@@ -147,6 +146,7 @@ def test_findings_block_reports_errors_and_reported_literature_values() -> None:
                 "findings": [
                     {
                         "check": "exact",
+                        "splits": ["train", "test"],
                         "severity": "low",
                         "count": 3,
                         "denominator": 100,
@@ -159,9 +159,9 @@ def test_findings_block_reports_errors_and_reported_literature_values() -> None:
             {"name": "snli", "status": "error", "error": "FileNotFoundError: x", "findings": []},
         ]
     }
-    text = findings_block(e2, e3, None)
+    text = findings_block(e2, e3, None, [])
     assert "61.0%" in text
-    assert "67% (reported)" in text
+    assert "67.0% (reported)" in text
     assert "-6.0" in text
     assert "FileNotFoundError" in text
     assert "3 / 100" in text
@@ -286,11 +286,11 @@ def test_rendered_e1_block_labels_the_lsh_recall_and_the_bins() -> None:
     from benchlint.experiments import e1_summary
 
     summary = e1_summary(_recall([("substitution", 0.9, True), ("deletion", 0.5, False)]), 0.8)
-    text = calibration_block(_calib(), None, summary)
+    text = calibration_block(_calib(), summary)
     assert "detector recall conditional on true Jaccard >= 0.8 (LSH recall)" in text
     assert "E1 recall by true Jaccard bin" in text
     assert "Why short texts with word edits fall below the threshold" in text
-    plain = calibration_block(_calib(), None, None)
+    plain = calibration_block(_calib())
     assert "(LSH recall)" not in plain
 
 

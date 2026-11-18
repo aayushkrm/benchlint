@@ -6,26 +6,26 @@
   },
   "chance": 0.3333333333333333,
   "config": "mnli",
-  "config_hash": "99b77f375da335a7",
+  "config_hash": "ea7a3a9c4370a226",
   "dataset": "mnli",
   "eval_dropped_by_label": 0,
   "eval_split": "validation",
   "experiment": "E2",
   "flagged": true,
-  "gap_points": -1.1202,
+  "gap_points": -2.0202,
   "literature": {
     "citation": "Gururangan et al. (2018), Annotation Artifacts in Natural Language Inference Data, NAACL",
     "metric": "accuracy",
     "setting": "MNLI matched dev hypothesis-only accuracy",
     "status": "reported",
-    "value": 0.53
+    "value": 0.539
   },
   "majority": 0.31818644931227713,
   "mode": "full",
   "n_eval": 9815,
   "n_train": 100000,
   "p_value": 0.004975124378109453,
-  "runtime_s": 40.066,
+  "runtime_s": 63.578,
   "shortcuts": [
     {
       "chance": 0.3333333333333333,

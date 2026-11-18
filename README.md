@@ -2,7 +2,7 @@
 
 A linter for ML benchmarks. It finds train/test leakage, exact and near-duplicates, label conflicts, n-gram contamination and shortcut features before you trust a benchmark score.
 
-> **Status: v0.1.0 candidate. No full results are committed yet.** The checks, the CLI, the pre-registered experiments E1 to E3 and their smoke tests exist. The full experiment queue has not been run, so the results sections below say "No results yet". Nothing is published (no GitHub repository, no release, no Pages site) until the author confirms.
+> **Status: v0.1.0 candidate with committed results.** E1 (detector calibration), E2 (hypothesis-only replication) and E3 (leakage scan) are full-mode runs, rendered below. The provenance table at the end of the findings section gives each run's commit and working-tree state. E1 and E3 come from working trees with uncommitted changes; E2 was re-run from a clean tree. **E4 (dogfooding on the sibling projects) has not been run.** Nothing is published (no GitHub repository, no release, no Pages site) until the author confirms.
 
 ## Why
 
@@ -54,14 +54,35 @@ Specs are YAML. An AuditSpec has a `dataset:` mapping (source, text and label fi
 - **Shortcuts.** Partial-input baselines are compared with the majority class and with chance. A view is flagged when the lower bound of its bootstrap interval exceeds the majority baseline by a margin. A flag is a prompt to investigate.
 - **Reports.** Every rate carries its denominator and a 95% Wilson interval, in the Markdown, HTML and JSON reports.
 
+## How the results were produced
+
+- **Scripts.** `scripts/calibrate.py` (E1), `scripts/run_e2.py` (E2) and `scripts/run_e3.py` (E3)
+  write JSON under `results/<experiment>/`, each with a config hash and a mode. Smoke runs write
+  to a temporary folder and are never rendered. `scripts/summarise_e1.py` computes the E1 summary
+  from the stored planted pairs without running the detector again.
+- **Pre-registration.** The design is in `docs/prereg.md`, committed before the full runs.
+  Every change of n, threshold, cap, method or constant is in `docs/deviations.md` with its reason.
+- **Literature values.** The E2 comparison values are taken from Table 2 of Gururangan et al.
+  (2018), arXiv:1803.02324, and were checked against it. They are cited, not measured here. The
+  MNLI value was first entered as an approximation; the first E2 render showed it, and the
+  corrected value replaced it (see the E2 entry in `docs/deviations.md`).
+- **Working trees.** The provenance table at the end of the findings section gives each run's
+  commit and working-tree state, read from its own `env.json`. E1 and E3 were run from working
+  trees with uncommitted changes; the deviations entries name the files and the commits. E2 was
+  re-run from a clean tree after the literature correction.
+- **Data.** Results depend on the Hugging Face Hub versions served at run time. The spec files
+  name each dataset, config and split.
+- **Rendering.** `make report` writes the blocks in this file and `results/headline.json` from
+  `results/`. `make check-results` (run in CI) fails if either is out of date.
+
 ## Calibration: how well the detectors work (E1)
 
-This comes before any finding, on purpose. It says how often the detectors recover planted copies and how often they fire on clean pairs. A finding is only as good as this table.
+This comes before any finding, on purpose. It says how often the detectors recover planted copies and how often they fire on random clean pairs. Exact-copy recall is 100% by construction (identical text gives an identical key), and random pairs are a weak test of false positives, so no hard-negative rate has been measured. A finding is only as good as this table.
 
 **Read the overall recall with its cause.** Five-word shingles at a threshold of 0.8 need the copy to keep most of its shingles. One word edit changes at most five shingles, so a text of n words keeps at least (n - 4 - 5) / (n - 4 + 5) of its Jaccard. A single edit reaches 0.8 only for texts of about 49 words or more, and a few edits need far longer texts. Items in the short and medium length bins (under 41 words) are below that length, so many of their planted near-duplicates have a true Jaccard below 0.8; the true-Jaccard table shows how many. The detector cannot report those pairs by design. The table labelled "conditional on true Jaccard" separates the two: it shows how often the retrieval step finds the pairs that are allowed to be reported. The bound table gives the arithmetic. Lower the shingle size or the threshold to catch shorter edits, and measure the effect with E1 before quoting it.
 
 <!-- results:start -->
-Source: `results/e1/calibration.json` (mode full, git `6172c97baf`, environment in `results/e1/env.json`). Pre-registered in `docs/prereg.md`, E1.
+Source: results/e1/calibration.json (mode full), with the summary in results/e1/summary.json. Pre-registered in docs/prereg.md, E1. The commit and working tree of each run are in the provenance table at the end of the findings section.
 
 **SYNTHETIC: the planted copies are generated edits of real AG News text. They measure the detector on known edits, not on real leaks.**
 
@@ -83,7 +104,7 @@ Source: `results/e1/calibration.json` (mode full, git `6172c97baf`, environment 
 | insertion | 10 | 0/100 | 0.0% [0.0%, 3.7%] | 0.140 |
 | exact copy | 0 | 200/200 | 100.0% [98.1%, 100.0%] | 1.000 |
 
-Base: 2000 clean items from `fancyzhx/ag_news` split `test`. Planted: 200 exact copies, 1200 near-duplicate copies (100 per edit bucket), 600 clean controls. Reporting threshold 0.8 on exact Jaccard, 5-word shingles.
+Exact copies are found by construction: identical text gives an identical key, so the exact row checks the planting and normalisation, not the detector. Base: 2000 clean items from `fancyzhx/ag_news` split `test`. Planted: 200 exact copies, 1200 near-duplicate copies (100 per edit bucket), 600 clean controls. Reporting threshold 0.8 on exact Jaccard, 5-word shingles.
 
 ### E1 detector recall conditional on true Jaccard >= 0.8 (LSH recall)
 
@@ -142,7 +163,7 @@ With 5-word shingles, a text of n words has S = n - 4 shingles. One word edit ch
 |---|---|---|
 | 10000 | 0 | 0.00% [0.00%, 0.04%] |
 
-Random pairs of clean controls; flagged at threshold 0.8.
+Random pairs of clean controls, flagged at threshold 0.8. Random pairs are almost never near-duplicates, so this is a weak test of false positives. No hard-negative rate (same-topic or templated pairs) has been measured.
 
 ### E1 recall by text length (found / planted)
 
@@ -167,64 +188,74 @@ Cells with fewer than 20 planted pairs are marked low n. Bins are word-count ter
 ## Findings on public benchmarks (E2 and E3)
 
 <!-- results:start -->
-Source: `results/e2/*.json` and `results/e3/summary.json` (full mode, git `6172c97baf`). Environment in `results/e2/env.json` and `results/e3/env.json`.
+Source: results/e2/*.json, results/e3/summary.json and results/e3/<dataset>.json (full mode).
 
 ### E2 hypothesis-only accuracy against reported literature
 
 | Dataset | Eval items | Train items | Accuracy [95% CI] | Majority baseline | Literature (reported) | Gap (points) | Flagged |
 |---|---|---|---|---|---|---|---|
-| snli | 9824 | 100000 | 64.4% [63.5%, 65.4%] | 32.8% | 67% (reported) | -2.6 | yes |
-| mnli | 9815 | 100000 | 51.9% [50.9%, 52.9%] | 31.8% | 53% (reported) | -1.1 | yes |
+| snli | 9824 | 100000 | 64.4% [63.5%, 65.4%] | 32.8% | 67.0% (reported) | -2.6 | yes |
+| mnli | 9815 | 100000 | 51.9% [50.9%, 52.9%] | 31.8% | 53.9% (reported) | -2.0 | yes |
 
-Literature values: Gururangan et al. (2018), Annotation Artifacts in Natural Language Inference Data, NAACL. They are cited, not our measurements. Our classifier is TF-IDF with logistic regression, not the models of the cited paper, so this tests the size of a shortcut, not a replication.
+Literature values: Gururangan et al. (2018), Annotation Artifacts in Natural Language Inference Data, NAACL, Table 2 (fastText hypothesis-only), arXiv:1803.02324. Checked against that table; they are cited, not our measurements. Our classifier is TF-IDF with logistic regression, not the models of the cited paper, so this tests the size of a shortcut, not a replication.
 
 ### E3 leakage scan
 
-| Dataset | Check | Severity | Count / n | Rate [95% CI] |
-|---|---|---|---|---|
-| gsm8k | exact | info | 0 / 7473 | 0.0% [0.0%, 0.1%] |
-| gsm8k | exact | info | 0 / 1319 | 0.0% [0.0%, 0.3%] |
-| gsm8k | exact | info | 0 / 1319 | 0.0% [0.0%, 0.3%] |
-| gsm8k | near | info | 0 / 8792 | 0.0% [0.0%, 0.0%] |
-| gsm8k | near | info | 0 / 8792 | 0.0% [0.0%, 0.0%] |
-| arc-easy | exact | low | 6 / 2251 | 0.3% [0.1%, 0.6%] |
-| arc-easy | exact | low | 5 / 2376 | 0.2% [0.1%, 0.5%] |
-| arc-easy | exact | medium | 7 / 2376 | 0.3% [0.1%, 0.6%] |
-| arc-easy | near | medium | 19 / 4627 | 0.4% [0.3%, 0.6%] |
-| arc-easy | near | medium | 27 / 4627 | 0.6% [0.4%, 0.8%] |
-| arc-easy | labels | medium | 24 / 4627 | 0.5% [0.3%, 0.8%] |
-| ag-news | exact | low | 227 / 120000 | 0.2% [0.2%, 0.2%] |
-| ag-news | exact | low | 1 / 7600 | 0.0% [0.0%, 0.1%] |
-| ag-news | exact | medium | 17 / 7600 | 0.2% [0.1%, 0.4%] |
-| ag-news | near | medium | 208 / 127600 | 0.2% [0.1%, 0.2%] |
-| ag-news | near | medium | 1850 / 127600 | 1.4% [1.4%, 1.5%] |
-| ag-news | labels | medium | 202 / 127600 | 0.2% [0.1%, 0.2%] |
-| imdb | exact | low | 96 / 25000 | 0.4% [0.3%, 0.5%] |
-| imdb | exact | low | 199 / 25000 | 0.8% [0.7%, 0.9%] |
-| imdb | exact | medium | 123 / 25000 | 0.5% [0.4%, 0.6%] |
-| imdb | near | medium | 246 / 50000 | 0.5% [0.4%, 0.6%] |
-| imdb | near | medium | 635 / 50000 | 1.3% [1.2%, 1.4%] |
-| imdb | labels | info | 0 / 50000 | 0.0% [0.0%, 0.0%] |
-| snli | exact | low | 32 / 100000 | 0.0% [0.0%, 0.0%] |
-| snli | exact | low | 2 / 9842 | 0.0% [0.0%, 0.1%] |
-| snli | exact | info | 0 / 9824 | 0.0% [0.0%, 0.0%] |
-| snli | exact | info | 0 / 9842 | 0.0% [0.0%, 0.0%] |
-| snli | exact | info | 0 / 9824 | 0.0% [0.0%, 0.0%] |
-| snli | exact | info | 0 / 9824 | 0.0% [0.0%, 0.0%] |
-| snli | near | info | 0 / 119666 | 0.0% [0.0%, 0.0%] |
-| snli | near | medium | 3403 / 119666 | 2.8% [2.8%, 2.9%] |
-| snli | labels | high | 3133 / 119666 | 2.6% [2.5%, 2.7%] |
-| mbpp-vs-humaneval | exact | info | 0 / 374 | 0.0% [0.0%, 1.0%] |
-| mbpp-vs-humaneval | exact | info | 0 / 500 | 0.0% [0.0%, 0.8%] |
-| mbpp-vs-humaneval | exact | medium | 1 / 500 | 0.2% [0.0%, 1.1%] |
-| mbpp-vs-humaneval | near | medium | 2 / 874 | 0.2% [0.1%, 0.8%] |
-| mbpp-vs-humaneval | near | info | 0 / 874 | 0.0% [0.0%, 0.4%] |
-| mbpp-vs-humaneval | ngram | info | 0 / 500 | 0.0% [0.0%, 0.8%] |
+| Dataset | Check | Scope | Split pair | Severity | Count / n | Rate [95% CI] |
+|---|---|---|---|---|---|---|
+| gsm8k | exact | within-split | train | info | 0 / 7473 | 0.0% [0.0%, 0.1%] |
+| gsm8k | exact | within-split | test | info | 0 / 1319 | 0.0% [0.0%, 0.3%] |
+| gsm8k | exact | cross-split | train / test | info | 0 / 1319 | 0.0% [0.0%, 0.3%] |
+| gsm8k | near | cross-split | test / train | info | 0 / 8792 | 0.0% [0.0%, 0.0%] |
+| gsm8k | near | within-split | test / train | info | 0 / 8792 | 0.0% [0.0%, 0.0%] |
+| arc-easy | exact | within-split | train | low | 6 / 2251 | 0.3% [0.1%, 0.6%] |
+| arc-easy | exact | within-split | test | low | 5 / 2376 | 0.2% [0.1%, 0.5%] |
+| arc-easy | exact | cross-split | train / test | medium | 7 / 2376 | 0.3% [0.1%, 0.6%] |
+| arc-easy | near | cross-split | test / train | medium | 19 / 4627 | 0.4% [0.3%, 0.6%] |
+| arc-easy | near | within-split | test / train | medium | 27 / 4627 | 0.6% [0.4%, 0.8%] |
+| arc-easy | labels | n/a | train / test | medium | 24 / 4627 | 0.5% [0.3%, 0.8%] |
+| ag-news | exact | within-split | train | low | 227 / 120000 | 0.2% [0.2%, 0.2%] |
+| ag-news | exact | within-split | test | low | 1 / 7600 | 0.0% [0.0%, 0.1%] |
+| ag-news | exact | cross-split | train / test | medium | 17 / 7600 | 0.2% [0.1%, 0.4%] |
+| ag-news | near | cross-split | test / train | medium | 208 / 127600 | 0.2% [0.1%, 0.2%] |
+| ag-news | near | within-split | test / train | medium | 1850 / 127600 | 1.4% [1.4%, 1.5%] |
+| ag-news | labels | n/a | train / test | medium | 202 / 127600 | 0.2% [0.1%, 0.2%] |
+| imdb | exact | within-split | train | low | 96 / 25000 | 0.4% [0.3%, 0.5%] |
+| imdb | exact | within-split | test | low | 199 / 25000 | 0.8% [0.7%, 0.9%] |
+| imdb | exact | cross-split | train / test | medium | 123 / 25000 | 0.5% [0.4%, 0.6%] |
+| imdb | near | cross-split | test / train | medium | 246 / 50000 | 0.5% [0.4%, 0.6%] |
+| imdb | near | within-split | test / train | medium | 635 / 50000 | 1.3% [1.2%, 1.4%] |
+| imdb | labels | n/a | train / test | info | 0 / 50000 | 0.0% [0.0%, 0.0%] |
+| snli | exact | within-split | train | low | 32 / 100000 | 0.0% [0.0%, 0.0%] |
+| snli | exact | within-split | validation | low | 2 / 9842 | 0.0% [0.0%, 0.1%] |
+| snli | exact | within-split | test | info | 0 / 9824 | 0.0% [0.0%, 0.0%] |
+| snli | exact | cross-split | train / validation | info | 0 / 9842 | 0.0% [0.0%, 0.0%] |
+| snli | exact | cross-split | train / test | info | 0 / 9824 | 0.0% [0.0%, 0.0%] |
+| snli | exact | cross-split | validation / test | info | 0 / 9824 | 0.0% [0.0%, 0.0%] |
+| snli | near | cross-split | test / train / validation | info | 0 / 119666 | 0.0% [0.0%, 0.0%] |
+| snli | near | within-split | test / train / validation | medium | 3403 / 119666 | 2.8% [2.8%, 2.9%] |
+| snli | labels | n/a | train / validation / test | high | 3133 / 119666 | 2.6% [2.5%, 2.7%] |
+| mbpp-vs-humaneval | exact | within-split | train | info | 0 / 374 | 0.0% [0.0%, 1.0%] |
+| mbpp-vs-humaneval | exact | within-split | test | info | 0 / 500 | 0.0% [0.0%, 0.8%] |
+| mbpp-vs-humaneval | exact | cross-split | train / test | medium | 1 / 500 | 0.2% [0.0%, 1.1%] |
+| mbpp-vs-humaneval | near | cross-split | test / train | medium | 2 / 874 | 0.2% [0.1%, 0.8%] |
+| mbpp-vs-humaneval | near | within-split | test / train | info | 0 / 874 | 0.0% [0.0%, 0.4%] |
+| mbpp-vs-humaneval | ngram | n/a | test | info | 0 / 500 | 0.0% [0.0%, 0.8%] |
 
-A finding means the lexical check matched. Shared templates can match without contamination. Example pairs are in `results/e3/`.
+A finding means the lexical check matched. Shared templates can match without contamination. Near findings list both splits; the scope column separates cross-split counts from within-split counts. Example pairs are in results/e3/.
+
+### Provenance of the committed results (from each env.json)
+
+| Experiment | Commit | Working tree at run | Recorded (UTC) |
+|---|---|---|---|
+| E1 | 6172c97baf | uncommitted changes; the paths were not recorded (envinfo before the change) | 2026-11-18T20:19:46+00:00 |
+| E2 | 0dc2ff2f1b | clean tree (no uncommitted changes outside results/); diff hash f3188c9bb48b | 2026-11-18T22:40:28+00:00 |
+| E3 | b0eddc1f07 | uncommitted changes; the paths were not recorded (envinfo before the change) | 2026-11-18T20:44:18+00:00 |
+
+Each row is read from that experiment's env.json. A run from a dirty tree is not reproducible from the commit alone. The code differences are in docs/deviations.md.
 <!-- results:end -->
 
-Literature values in E2 are cited as reported; they are not our measurements. Each rate in E3 is a count of matched items, not a claim about the benchmark's validity.
+Literature values in E2 are taken from Table 2 of Gururangan et al. (2018), arXiv:1803.02324, and were checked against it; they are cited, not our measurements. Each rate in E3 is a count of matched items, not a claim about the benchmark's validity. The E3 scope column separates cross-split counts from within-split counts.
 
 ## Limitations
 
@@ -239,6 +270,7 @@ Literature values in E2 are cited as reported; they are not our measurements. Ea
 
 - A clean report does not show that a benchmark is clean. It shows that these checks did not fire at the stated thresholds.
 - It does not measure model memorisation, and it does not check that a score was computed correctly.
+- E4 (dogfooding on the sibling projects' eval sets) has not been run.
 - The E1 planted copies are synthetic edits of real text. They measure the detector, not the frequency of leaks in any benchmark.
 - Results apply only to the datasets in `specs/`, as the Hugging Face Hub served them when they were run.
 - There is no web interface beyond the static reports.
@@ -262,7 +294,7 @@ The code is MIT (see `LICENSE`).
 
 ## Environment
 
-Developed on macOS x86_64 (Intel i7-4770HQ laptop, CPU only). CI runs on Linux because Intel macOS runners are being retired. Every result directory has an `env.json` from `scripts/envinfo.py` (git SHA, UTC time, CPU, RAM, OS, Python and package versions; no hostname or username).
+The E1 environment is the Intel i7-4770HQ laptop, CPU only, recorded in `results/e1/env.json` (its summary is in `results/headline.json`). CI runs on Linux because Intel macOS runners are being retired. Every result directory has an `env.json` from `scripts/envinfo.py` (git SHA, UTC time, CPU, RAM, OS, Python and package versions; no hostname or username).
 
 ## Reproducing the experiments
 

@@ -39,7 +39,8 @@ SYNTHETIC_EDITS_NOTE = (
     "detector on known edits, not on real leaks."
 )
 LITERATURE_CITATION = (
-    "Gururangan et al. (2018), Annotation Artifacts in Natural Language Inference Data, NAACL"
+    "Gururangan et al. (2018), Annotation Artifacts in Natural Language Inference Data, NAACL, "
+    "Table 2 (fastText hypothesis-only), arXiv:1803.02324"
 )
 
 
@@ -376,6 +377,8 @@ def calibration_tables(
             ),
             rows=tuple(recall_rows),
             note=(
+                "Exact copies are found by construction: identical text gives an identical key, "
+                "so the exact row checks the planting and normalisation, not the detector. "
                 f"Base: {src['n_base']} clean items from `{src['dataset']}` split "
                 f"`{src['split']}`. Planted: {roles['exact']} exact copies, {roles['near']} "
                 f"near-duplicate copies ({roles['per_bucket']} per edit bucket), {roles['clean']} "
@@ -393,7 +396,11 @@ def calibration_tables(
                     f"{pct(fpr['rate'], 2)} [{pct(fpr['ci_low'], 2)}, {pct(fpr['ci_high'], 2)}]",
                 ),
             ),
-            note=f"Random pairs of clean controls; flagged at threshold {threshold}.",
+            note=(
+                f"Random pairs of clean controls, flagged at threshold {threshold}. Random pairs "
+                "are almost never near-duplicates, so this is a weak test of false positives. No "
+                "hard-negative rate (same-topic or templated pairs) has been measured."
+            ),
         ),
         Table(
             title="E1 recall by text length (found / planted)",
@@ -506,8 +513,37 @@ def _summary_tables(summary: dict[str, Any]) -> list[Table]:
     return [conditional, bins, arithmetic]
 
 
-def findings_tables(e2: list[dict[str, Any]], e3: dict[str, Any] | None) -> list[Table]:
-    """The E2 and E3 tables for the README and the site."""
+def _scope_label(scope: Any) -> str:
+    return {
+        "cross": "cross-split",
+        "cross_split": "cross-split",
+        "within": "within-split",
+        "within_split": "within-split",
+    }.get(scope, "n/a")
+
+
+def _finding_scopes(
+    name: str, findings: list[dict[str, Any]], reports: dict[str, dict[str, Any]] | None
+) -> list[str]:
+    """Scope of each summary finding, read from the dataset's report (same order)."""
+    if reports is None or name not in reports:
+        return ["n/a"] * len(findings)
+    report_findings = reports[name]["findings"]
+    if len(report_findings) != len(findings):
+        return ["n/a"] * len(findings)
+    return [_scope_label(rf.get("details", {}).get("scope")) for rf in report_findings]
+
+
+def findings_tables(
+    e2: list[dict[str, Any]],
+    e3: dict[str, Any] | None,
+    e3_reports: dict[str, dict[str, Any]] | None = None,
+) -> list[Table]:
+    """The E2 and E3 tables for the README and the site.
+
+    E3 rows carry the scope (cross-split or within-split) and the split pair, read from each
+    dataset's report, so a within-split count is not read as a cross-split one.
+    """
     tables: list[Table] = []
     if e2:
         rows = []
@@ -521,7 +557,7 @@ def findings_tables(e2: list[dict[str, Any]], e3: dict[str, Any] | None) -> list
                     str(r["n_train"]),
                     f"{pct(acc['value'])} [{pct(acc['ci_low'])}, {pct(acc['ci_high'])}]",
                     pct(r["majority"]),
-                    f"{pct(lit['value'], 0)} (reported)",
+                    f"{pct(lit['value'], 1)} (reported)",
                     f"{r['gap_points']:+.1f}",
                     "yes" if r["flagged"] else "no",
                 )
@@ -541,10 +577,10 @@ def findings_tables(e2: list[dict[str, Any]], e3: dict[str, Any] | None) -> list
                 ),
                 rows=tuple(rows),
                 note=(
-                    f"Literature values: {LITERATURE_CITATION}. They are cited, not our "
-                    "measurements. Our classifier is TF-IDF with logistic regression, not the "
-                    "models of the cited paper, so this tests the size of a shortcut, not a "
-                    "replication."
+                    f"Literature values: {LITERATURE_CITATION}. Checked against that table; "
+                    "they are cited, not our measurements. Our classifier is TF-IDF with "
+                    "logistic regression, not the models of the cited paper, so this tests the "
+                    "size of a shortcut, not a replication."
                 ),
             )
         )
@@ -552,13 +588,18 @@ def findings_tables(e2: list[dict[str, Any]], e3: dict[str, Any] | None) -> list
         rows3: list[tuple[str, ...]] = []
         for d in e3["datasets"]:
             if d["status"] != "ok":
-                rows3.append((d["name"], "error", "n/a", str(d.get("error") or ""), "n/a"))
+                rows3.append(
+                    (d["name"], "error", "n/a", "n/a", "n/a", str(d.get("error") or ""), "n/a")
+                )
                 continue
-            for f in d["findings"]:
+            scopes = _finding_scopes(d["name"], d["findings"], e3_reports)
+            for f, scope in zip(d["findings"], scopes, strict=True):
                 rows3.append(
                     (
                         d["name"],
                         f["check"],
+                        scope,
+                        " / ".join(f["splits"]),
                         f["severity"],
                         f"{f['count']} / {f['denominator']}",
                         f"{pct(f['rate'])} [{pct(f['ci_low'])}, {pct(f['ci_high'])}]",
@@ -567,11 +608,21 @@ def findings_tables(e2: list[dict[str, Any]], e3: dict[str, Any] | None) -> list
         tables.append(
             Table(
                 title="E3 leakage scan",
-                headers=("Dataset", "Check", "Severity", "Count / n", "Rate [95% CI]"),
+                headers=(
+                    "Dataset",
+                    "Check",
+                    "Scope",
+                    "Split pair",
+                    "Severity",
+                    "Count / n",
+                    "Rate [95% CI]",
+                ),
                 rows=tuple(rows3),
                 note=(
                     "A finding means the lexical check matched. Shared templates can match "
-                    "without contamination. Example pairs are in `results/e3/`."
+                    "without contamination. Near findings list both splits; the scope column "
+                    "separates cross-split counts from within-split counts. Example pairs are in "
+                    "results/e3/."
                 ),
             )
         )
@@ -627,37 +678,72 @@ def html_table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
     )
 
 
-def calibration_block(
-    calib: dict[str, Any] | None,
-    env: dict[str, Any] | None,
-    summary: dict[str, Any] | None = None,
-) -> str:
+def calibration_block(calib: dict[str, Any] | None, summary: dict[str, Any] | None = None) -> str:
     """README block for E1: a source line, the synthetic label, and the tables."""
     if calib is None:
         return NO_RESULTS
-    sha = short_sha(env)
     header = (
-        f"Source: `results/e1/calibration.json` (mode {calib['mode']}, git `{sha}`, environment "
-        "in `results/e1/env.json`). Pre-registered in `docs/prereg.md`, E1."
+        f"Source: results/e1/calibration.json (mode {calib['mode']}), with the summary in "
+        "results/e1/summary.json. Pre-registered in docs/prereg.md, E1. The commit and working "
+        "tree of each run are in the provenance table at the end of the findings section."
     )
     return "\n\n".join(
         [header, f"**{SYNTHETIC_EDITS_NOTE}**", tables_markdown(calibration_tables(calib, summary))]
     )
 
 
+def _provenance_row(name: str, env: dict[str, Any] | None) -> tuple[str, ...]:
+    """One row of the provenance table, read from an experiment's env.json."""
+    if env is None:
+        return (name, "n/a", "no env.json", "n/a")
+    sha = env.get("git_sha")
+    commit = str(sha)[:10] if sha else "n/a"
+    dirty = env.get("git_dirty")
+    if dirty is None:
+        state = "git unavailable"
+    elif dirty is False:
+        state = "clean tree (no uncommitted changes outside results/)"
+    else:
+        paths = env.get("git_dirty_paths")
+        if paths is None:
+            state = "uncommitted changes; the paths were not recorded (envinfo before the change)"
+        else:
+            shown = ", ".join(paths[:5]) + (" and more" if len(paths) > 5 else "")
+            state = f"uncommitted changes: {shown}"
+    digest = env.get("git_diff_sha256")
+    if digest:
+        state += f"; diff hash {str(digest)[:12]}"
+    return (name, commit, state, str(env.get("utc_time") or "n/a"))
+
+
+def provenance_table(envs: Sequence[tuple[str, dict[str, Any] | None]]) -> Table:
+    """Commit and working-tree state of each experiment, from its own env.json."""
+    return Table(
+        title="Provenance of the committed results (from each env.json)",
+        headers=("Experiment", "Commit", "Working tree at run", "Recorded (UTC)"),
+        rows=tuple(_provenance_row(name, env) for name, env in envs),
+        note=(
+            "Each row is read from that experiment's env.json. A run from a dirty tree is not "
+            "reproducible from the commit alone. The code differences are in docs/deviations.md."
+        ),
+    )
+
+
 def findings_block(
-    e2: list[dict[str, Any]], e3: dict[str, Any] | None, env: dict[str, Any] | None
+    e2: list[dict[str, Any]],
+    e3: dict[str, Any] | None,
+    e3_reports: dict[str, dict[str, Any]] | None,
+    envs: Sequence[tuple[str, dict[str, Any] | None]],
 ) -> str:
-    """README block for E2 and E3, or the no-results text."""
-    tables = findings_tables(e2, e3)
+    """README block for E2 and E3 with their provenance, or the no-results text."""
+    tables = findings_tables(e2, e3, e3_reports)
     if not tables:
         return NO_RESULTS
-    sha = short_sha(env)
     header = (
-        "Source: `results/e2/*.json` and `results/e3/summary.json` (full mode, git "
-        f"`{sha}`). Environment in `results/e2/env.json` and `results/e3/env.json`."
+        "Source: results/e2/*.json, results/e3/summary.json and results/e3/<dataset>.json "
+        "(full mode)."
     )
-    return "\n\n".join([header, tables_markdown(tables)])
+    return "\n\n".join([header, tables_markdown([*tables, provenance_table(envs)])])
 
 
 def render_index_html(
@@ -667,15 +753,21 @@ def render_index_html(
     e3: dict[str, Any] | None,
     e3_links: Sequence[tuple[str, str, str]],
     summary: dict[str, Any] | None = None,
+    e3_reports: dict[str, dict[str, Any]] | None = None,
+    envs: Sequence[tuple[str, dict[str, Any] | None]] = (),
 ) -> str:
-    """The static site index: E1, E2 and E3 tables, and links to per-dataset reports."""
+    """The static site index: E1, E2 and E3 tables with provenance, and per-dataset links."""
     e1_html = (
         tables_html(calibration_tables(calib, summary))
         if calib
         else f"<p>{html.escape(NO_RESULTS)}</p>"
     )
-    findings = tables_html(findings_tables(e2, e3))
-    e2_html = findings if findings else f"<p>{html.escape(NO_RESULTS)}</p>"
+    findings = findings_tables(e2, e3, e3_reports)
+    if findings:
+        findings.append(provenance_table(envs))
+        e2_html = tables_html(findings)
+    else:
+        e2_html = f"<p>{html.escape(NO_RESULTS)}</p>"
     links = (
         "".join(
             f'<li><a href="{html.escape(href)}">{html.escape(name)}</a> ({html.escape(status)})</li>'

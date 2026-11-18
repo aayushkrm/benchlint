@@ -16,7 +16,7 @@
   "literature": {
     "citation": "Gururangan et al. (2018), Annotation Artifacts in Natural Language Inference Data, NAACL",
     "metric": "accuracy",
-    "setting": "SNLI hypothesis-only accuracy",
+    "setting": "SNLI test hypothesis-only accuracy",
     "status": "reported",
     "value": 0.67
   },
@@ -25,7 +25,7 @@
   "n_eval": 9824,
   "n_train": 100000,
   "p_value": 0.004975124378109453,
-  "runtime_s": 30.474,
+  "runtime_s": 51.973,
   "shortcuts": [
     {
       "chance": 0.3333333333333333,

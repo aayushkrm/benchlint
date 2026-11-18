@@ -26,7 +26,7 @@ if str(SCRIPTS) not in sys.path:
 from benchlint.experiments import REPO_ROOT, RESULTS_DIR, render_index_html  # noqa: E402
 from benchlint.report import write_reports  # noqa: E402
 from benchlint.schema import AuditReport  # noqa: E402
-from render_readme import load_results  # noqa: E402
+from render_readme import load_results, provenance_envs  # noqa: E402
 
 DEFAULT_OUT = REPO_ROOT / "site" / "dist"
 TITLE = "benchlint: benchmark audit results"
@@ -55,7 +55,16 @@ def build(results_dir: Path, out_dir: Path) -> list[Path]:
 
     index = out_dir / "index.html"
     index.write_text(
-        render_index_html(TITLE, res["calib"], res["e2"], e3, links, res["e1_summary"]),
+        render_index_html(
+            TITLE,
+            res["calib"],
+            res["e2"],
+            e3,
+            links,
+            res["e1_summary"],
+            res["e3_reports"],
+            provenance_envs(res),
+        ),
         encoding="utf-8",
     )
     written.append(index)

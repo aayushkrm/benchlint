@@ -88,6 +88,7 @@ def _e1_items(results_dir: Path) -> list[dict[str, Any]]:
     calib = load_full(results_dir / "e1" / "calibration.json")
     if summary is not None:
         lsh = summary["lsh_recall_at_threshold"]
+        overall = summary["all_near"]
         threshold = summary["threshold"]
         items.append(
             {
@@ -95,7 +96,11 @@ def _e1_items(results_dir: Path) -> list[dict[str, Any]]:
                 "label": (
                     f"E1 detector recall for pairs at or above Jaccard {threshold} (LSH recall)"
                 ),
-                "value": f"{pct(lsh['recall'])} ({lsh['found']} of {lsh['n']})",
+                "value": (
+                    f"{pct(lsh['recall'])} at true Jaccard at or above {threshold} "
+                    f"({lsh['found']} of {lsh['n']}); overall {pct(overall['recall'])} "
+                    f"({overall['found']} of {overall['n']})"
+                ),
                 "detail": (
                     "Planted near-duplicates (synthetic word edits of AG News test items) whose "
                     f"exact {summary['shingle']}-word shingle Jaccard is at or above {threshold}. "
@@ -148,13 +153,13 @@ def _e2_items(results_dir: Path) -> list[dict[str, Any]]:
                 "id": f"e2_{name}",
                 "label": f"E2 {label} hypothesis-only accuracy vs literature",
                 "value": (
-                    f"{pct(acc['value'])} accuracy (literature {pct(lit['value'], 0)}, reported)"
+                    f"{pct(acc['value'])} accuracy (literature {pct(lit['value'], 1)}, reported)"
                 ),
                 "detail": (
                     f"Hypothesis-only TF-IDF and logistic regression, train capped at "
                     f"{r['n_train']} rows, majority baseline {pct(r['majority'])}. Gap "
                     f"{r['gap_points']:+.1f} points against the literature value, which is cited "
-                    "as reported (Gururangan et al. 2018, NAACL) and not measured here."
+                    "as reported (Gururangan et al. 2018, NAACL, Table 2) and not measured here."
                 ),
                 "n": r["n_eval"],
                 "ci": f"[{pct(acc['ci_low'])}, {pct(acc['ci_high'])}]",

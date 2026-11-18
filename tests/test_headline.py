@@ -119,6 +119,14 @@ def _fixture(root: Path, *, with_e3: bool = True) -> Path:
                 "ci_high": 0.98,
                 "low_n": False,
             },
+            "all_near": {
+                "n": 20,
+                "found": 9,
+                "recall": 0.45,
+                "ci_low": 0.25,
+                "ci_high": 0.67,
+                "low_n": False,
+            },
             "missed_at_or_above_threshold": 1,
             "found_below_threshold": 0,
         },
@@ -224,7 +232,9 @@ def test_build_headline_from_fixtures_has_the_expected_items(tmp_path: Path) -> 
 def test_items_format_their_values_from_the_fixture_numbers(tmp_path: Path) -> None:
     items = {i["id"]: i for i in build_headline(_fixture(tmp_path / "r"))["items"]}
     lsh = items["e1_lsh_recall"]
-    assert lsh["value"] == "90.0% (9 of 10)"
+    assert lsh["value"] == (
+        "90.0% at true Jaccard at or above 0.8 (9 of 10); overall 45.0% (9 of 20)"
+    )
     assert lsh["n"] == 10 and lsh["ci"] == "[60.0%, 98.0%]"
     assert lsh["synthetic"] is True and lsh["featured"] is True
     assert "Missed by LSH retrieval: 1" in lsh["detail"]
@@ -232,7 +242,7 @@ def test_items_format_their_values_from_the_fixture_numbers(tmp_path: Path) -> N
     assert short["value"] == "5.0% (2 of 40)"
     assert "under 34 words" in short["label"]
     snli = items["e2_snli"]
-    assert snli["value"] == "64.4% accuracy (literature 67%, reported)"
+    assert snli["value"] == "64.4% accuracy (literature 67.0%, reported)"
     assert snli["n"] == 9824 and snli["synthetic"] is False
     assert "Gap -2.6 points" in snli["detail"]
     assert "Gururangan et al. 2018" in snli["detail"]

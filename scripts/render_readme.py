@@ -45,15 +45,37 @@ def load_results(results_dir: Path) -> dict[str, Any]:
         "e2": [r for r in e2 if r is not None],
         "env_e2": read_json(results_dir / "e2" / "env.json"),
         "e3": load_full(results_dir / "e3" / "summary.json"),
+        "e3_reports": e3_reports(results_dir),
+        "env_e3": read_json(results_dir / "e3" / "env.json"),
     }
+
+
+def e3_reports(results_dir: Path) -> dict[str, dict[str, Any]]:
+    """Each E3 dataset's AuditReport JSON (full mode), keyed by dataset name."""
+    summary = load_full(results_dir / "e3" / "summary.json")
+    out: dict[str, dict[str, Any]] = {}
+    if summary is None:
+        return out
+    for entry in summary["datasets"]:
+        if entry.get("status") != "ok":
+            continue
+        report = read_json(results_dir / "e3" / entry["report"])
+        if report is not None:
+            out[entry["name"]] = report
+    return out
+
+
+def provenance_envs(res: dict[str, Any]) -> list[tuple[str, dict[str, Any] | None]]:
+    """The environment record of each experiment, in table order."""
+    return [("E1", res["env_e1"]), ("E2", res["env_e2"]), ("E3", res["env_e3"])]
 
 
 def render_blocks(results_dir: Path) -> list[str]:
     """The two README blocks, in marker order."""
     res = load_results(results_dir)
     return [
-        calibration_block(res["calib"], res["env_e1"], res["e1_summary"]),
-        findings_block(res["e2"], res["e3"], res["env_e2"]),
+        calibration_block(res["calib"], res["e1_summary"]),
+        findings_block(res["e2"], res["e3"], res["e3_reports"], provenance_envs(res)),
     ]
 
 

@@ -10,7 +10,7 @@
       "n": 88,
       "source": "results/e1/summary.json",
       "synthetic": true,
-      "value": "96.6% (85 of 88)"
+      "value": "96.6% at true Jaccard at or above 0.8 (85 of 88); overall 7.1% (85 of 1200)"
     },
     {
       "ci": "[1.7%, 5.4%]",
@@ -25,25 +25,25 @@
     },
     {
       "ci": "[63.5%, 65.4%]",
-      "detail": "Hypothesis-only TF-IDF and logistic regression, train capped at 100000 rows, majority baseline 32.8%. Gap -2.6 points against the literature value, which is cited as reported (Gururangan et al. 2018, NAACL) and not measured here.",
+      "detail": "Hypothesis-only TF-IDF and logistic regression, train capped at 100000 rows, majority baseline 32.8%. Gap -2.6 points against the literature value, which is cited as reported (Gururangan et al. 2018, NAACL, Table 2) and not measured here.",
       "featured": true,
       "id": "e2_snli",
       "label": "E2 SNLI test hypothesis-only accuracy vs literature",
       "n": 9824,
       "source": "results/e2/snli.json",
       "synthetic": false,
-      "value": "64.4% accuracy (literature 67%, reported)"
+      "value": "64.4% accuracy (literature 67.0%, reported)"
     },
     {
       "ci": "[50.9%, 52.9%]",
-      "detail": "Hypothesis-only TF-IDF and logistic regression, train capped at 100000 rows, majority baseline 31.8%. Gap -1.1 points against the literature value, which is cited as reported (Gururangan et al. 2018, NAACL) and not measured here.",
+      "detail": "Hypothesis-only TF-IDF and logistic regression, train capped at 100000 rows, majority baseline 31.8%. Gap -2.0 points against the literature value, which is cited as reported (Gururangan et al. 2018, NAACL, Table 2) and not measured here.",
       "featured": true,
       "id": "e2_mnli",
       "label": "E2 MNLI matched dev hypothesis-only accuracy vs literature",
       "n": 9815,
       "source": "results/e2/mnli.json",
       "synthetic": false,
-      "value": "51.9% accuracy (literature 53%, reported)"
+      "value": "51.9% accuracy (literature 53.9%, reported)"
     },
     {
       "ci": "[0.43%, 0.56%]",
