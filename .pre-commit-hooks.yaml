@@ -1,8 +1,10 @@
-# Hook for other repositories: run benchlint on DatasetSpec files.
+# Hook for other repositories: audit DatasetSpec / AuditSpec YAML files with benchlint.
+# Consumers can override `files` in their own .pre-commit-config.yaml if their specs live
+# somewhere else. The hook exits 1 when a finding reaches --fail-on (default: high).
 - id: benchlint-audit
   name: benchlint audit
   description: Audit benchmark dataset specs for leakage, near-duplicates, label conflicts and shortcuts.
-  entry: benchlint audit
+  entry: benchlint audit --fail-on high --out benchlint-reports
   language: python
   files: ^specs/.*\.ya?ml$
   pass_filenames: true

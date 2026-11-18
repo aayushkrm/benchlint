@@ -1,18 +1,23 @@
-# Composite GitHub Action (placeholder). Usage in another repo:
+# Composite GitHub Action. Usage in another repo:
 #   - uses: aayushkrm/benchlint@v0.1.0
 #     with:
 #       spec: specs/gsm8k.yaml
 #       fail-on: high
+#       out: benchlint-report
 name: benchlint audit
-description: Audit a benchmark dataset spec with benchlint and fail on findings at or above a severity.
+description: Audit a benchmark dataset spec with benchlint, write JSON, Markdown and HTML reports, and fail on findings at or above a severity.
 inputs:
   spec:
-    description: Path to a DatasetSpec YAML file.
+    description: Path to an AuditSpec (or DatasetSpec) YAML file, relative to the workspace.
     required: true
   fail-on:
     description: Exit 1 if a finding is at or above this severity (info, low, medium, high).
     required: false
     default: high
+  out:
+    description: Directory for report.json, report.md and report.html.
+    required: false
+    default: benchlint-report
 runs:
   using: composite
   steps:
@@ -27,4 +32,12 @@ runs:
       env:
         BENCHLINT_SPEC: ${{ inputs.spec }}
         BENCHLINT_FAIL_ON: ${{ inputs.fail-on }}
-      run: benchlint audit "$BENCHLINT_SPEC" --fail-on "$BENCHLINT_FAIL_ON"
+        BENCHLINT_OUT: ${{ inputs.out }}
+      run: benchlint audit "$BENCHLINT_SPEC" --out "$BENCHLINT_OUT" --fail-on "$BENCHLINT_FAIL_ON"
+    - name: Upload benchlint reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchlint-report
+        path: ${{ inputs.out }}
+        if-no-files-found: ignore

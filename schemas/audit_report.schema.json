@@ -1,0 +1,352 @@
+{
+  "$defs": {
+    "DatasetSpec": {
+      "description": "One dataset to audit. Loaded from a YAML file under ``specs/``.",
+      "properties": {
+        "id_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Id Field"
+        },
+        "label_field": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Label Field"
+        },
+        "max_rows_per_split": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Max Rows Per Split"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "seed": {
+          "default": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceSpec"
+        },
+        "text_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Text Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "source",
+        "text_fields",
+        "label_field",
+        "id_field",
+        "max_rows_per_split"
+      ],
+      "title": "DatasetSpec",
+      "type": "object"
+    },
+    "ExamplePair": {
+      "description": "Two items flagged together. Texts are truncated to 200 characters by the producer.",
+      "properties": {
+        "a_id": {
+          "title": "A Id",
+          "type": "string"
+        },
+        "a_split": {
+          "title": "A Split",
+          "type": "string"
+        },
+        "a_text": {
+          "title": "A Text",
+          "type": "string"
+        },
+        "b_id": {
+          "title": "B Id",
+          "type": "string"
+        },
+        "b_split": {
+          "title": "B Split",
+          "type": "string"
+        },
+        "b_text": {
+          "title": "B Text",
+          "type": "string"
+        },
+        "similarity": {
+          "title": "Similarity",
+          "type": "number"
+        }
+      },
+      "required": [
+        "a_id",
+        "b_id",
+        "a_split",
+        "b_split",
+        "similarity",
+        "a_text",
+        "b_text"
+      ],
+      "title": "ExamplePair",
+      "type": "object"
+    },
+    "Finding": {
+      "description": "One result of one check over one or more splits.",
+      "properties": {
+        "check": {
+          "title": "Check",
+          "type": "string"
+        },
+        "count": {
+          "title": "Count",
+          "type": "integer"
+        },
+        "denominator": {
+          "title": "Denominator",
+          "type": "integer"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        },
+        "examples": {
+          "items": {
+            "$ref": "#/$defs/ExamplePair"
+          },
+          "title": "Examples",
+          "type": "array"
+        },
+        "rate": {
+          "title": "Rate",
+          "type": "number"
+        },
+        "severity": {
+          "enum": [
+            "info",
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "splits": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Splits",
+          "type": "array"
+        }
+      },
+      "required": [
+        "check",
+        "severity",
+        "splits",
+        "count",
+        "denominator",
+        "rate"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "ShortcutResult": {
+      "description": "Outcome of one partial-input baseline on one view.",
+      "properties": {
+        "chance": {
+          "title": "Chance",
+          "type": "number"
+        },
+        "ci_high": {
+          "title": "Ci High",
+          "type": "number"
+        },
+        "ci_low": {
+          "title": "Ci Low",
+          "type": "number"
+        },
+        "flagged": {
+          "title": "Flagged",
+          "type": "boolean"
+        },
+        "majority": {
+          "title": "Majority",
+          "type": "number"
+        },
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "n_test": {
+          "title": "N Test",
+          "type": "integer"
+        },
+        "n_train": {
+          "title": "N Train",
+          "type": "integer"
+        },
+        "p_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "P Value"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        },
+        "view": {
+          "title": "View",
+          "type": "string"
+        }
+      },
+      "required": [
+        "view",
+        "metric",
+        "value",
+        "ci_low",
+        "ci_high",
+        "majority",
+        "chance",
+        "n_train",
+        "n_test",
+        "p_value",
+        "flagged"
+      ],
+      "title": "ShortcutResult",
+      "type": "object"
+    },
+    "SourceSpec": {
+      "description": "Where a dataset (or reference corpus) comes from.\n\n``split_map`` maps the split name used inside benchlint (key) to the source's own split\nname (value), for example ``{\"validation\": \"validation_matched\"}``.",
+      "properties": {
+        "config": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Config"
+        },
+        "id_or_path": {
+          "title": "Id Or Path",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "hf",
+            "jsonl",
+            "csv",
+            "parquet"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision"
+        },
+        "split_map": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Split Map",
+          "type": "object"
+        }
+      },
+      "required": [
+        "kind",
+        "id_or_path",
+        "config",
+        "revision",
+        "split_map"
+      ],
+      "title": "SourceSpec",
+      "type": "object"
+    }
+  },
+  "description": "Top-level output of ``benchlint audit``.",
+  "properties": {
+    "dataset": {
+      "title": "Dataset",
+      "type": "string"
+    },
+    "env_info": {
+      "additionalProperties": true,
+      "title": "Env Info",
+      "type": "object"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "runtime_s": {
+      "title": "Runtime S",
+      "type": "number"
+    },
+    "schema_version": {
+      "const": "1",
+      "default": "1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "shortcuts": {
+      "items": {
+        "$ref": "#/$defs/ShortcutResult"
+      },
+      "title": "Shortcuts",
+      "type": "array"
+    },
+    "spec": {
+      "$ref": "#/$defs/DatasetSpec"
+    }
+  },
+  "required": [
+    "dataset",
+    "spec",
+    "findings",
+    "shortcuts",
+    "env_info",
+    "runtime_s"
+  ],
+  "title": "AuditReport",
+  "type": "object"
+}
