@@ -155,25 +155,33 @@ def _hf_spec(
     )
 
 
+def eval_records_from(by_key: dict[str, Record], text_of: Any, ids: list[str]) -> list[Record]:
+    """Committed eval items in committed order. A missing ID stops the run; none is dropped."""
+    missing = [i for i in ids if i not in by_key]
+    if missing:
+        raise E4Error(f"{len(missing)} committed IDs not found in the test split: {missing[:5]}")
+    return [
+        Record(id=f"test:{i}", split="test", fields={"text": text_of(by_key[i].fields)}, label=None)
+        for i in ids
+    ]
+
+
 def quantgate_records(
     spec: DatasetSpec, key_of: Any, text_of: Any, ids: list[str]
 ) -> tuple[list[Record], list[Record], int]:
-    """Train records and the committed eval records, on the prompt text. Fails on a missing ID."""
+    """Train records (every row) and the committed eval records, on the prompt text."""
     splits, _ = load_dataset_detailed(spec)
     train = [
         Record(
-            id=f"train:{key_of(r)}", split="train", fields={"text": text_of(r.fields)}, label=None
+            id=f"train:{key_of(r)}",
+            split="train",
+            fields={"text": text_of(r.fields)},
+            label=None,
         )
         for r in splits["train"]
     ]
     by_key = {key_of(r): r for r in splits["test"]}
-    missing = [i for i in ids if i not in by_key]
-    if missing:
-        raise E4Error(f"{len(missing)} committed IDs not found in the test split: {missing[:5]}")
-    evals = [
-        Record(id=f"test:{i}", split="test", fields={"text": text_of(by_key[i].fields)}, label=None)
-        for i in ids
-    ]
+    evals = eval_records_from(by_key, text_of, ids)
     return train, evals, len(splits["train"])
 
 
