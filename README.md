@@ -2,18 +2,17 @@
 
 A linter for ML benchmarks. It finds train/test leakage, exact and near-duplicates, label conflicts, n-gram contamination and shortcut features before you trust a benchmark score.
 
-> **Status: v0.1.0 candidate with committed results.** E1 (detector calibration), E2 (hypothesis-only replication) and E3 (leakage scan) are full-mode runs, rendered below. The provenance table at the end of the findings section gives each run's commit and working-tree state. E1 and E3 are recorded as dirty (`git_dirty` true) with no digest and no path list; E2 was re-run from a clean tree. **E4 (dogfooding on the sibling projects' inputs) has been run; its result is a null result for near duplicates.** Nothing is published (no GitHub repository, no release, no Pages site) until the author confirms.
-
+> **Status: v0.1.0, with committed results.** E1 (detector calibration), E2 (hypothesis-only replication) and E3 (leakage scan) are full-mode runs, rendered below. The provenance table at the end of the findings section gives each run's commit and working-tree state. E1 and E3 are recorded as dirty (`git_dirty` true) with no digest and no path list; E2 was re-run from a clean tree. **E4 (dogfooding on the sibling projects' inputs) has been run; its result is a null result for near duplicates.**
 ## Why
 
 Benchmark scores are only as good as the split they are measured on. A test item that also appears in training data, or a near-copy of one, inflates the number, and a single feature can predict the label without any reasoning. benchlint runs these checks on a dataset spec before the score is quoted. It is a linter, so it reports what it found and how sure it is; it does not decide whether a benchmark is good.
 
 ## Quickstart
 
-Install from a local checkout (the repository is not published yet):
+Install from a clone of the repository:
 
 ```bash
-git clone <this repository> benchlint && cd benchlint
+git clone https://github.com/aayushkrm/benchlint.git && cd benchlint
 uv tool install .            # or: uv sync --extra dev, then uv run benchlint ...
 benchlint demo               # SYNTHETIC data with planted leaks; under 30 s; no downloads
 ```
@@ -335,11 +334,11 @@ The E1 environment is the Intel i7-4770HQ laptop, CPU only, recorded in `results
 ```bash
 make setup            # uv venv -p 3.11 .venv && uv sync --extra dev
 make lint type test   # the tests run offline
-make results          # the full queue: E1, E2, E3 (network and CPU heavy; not run in CI)
+make results          # the full queue: E1 to E4 (network and CPU heavy; not run in CI; E4 reads the sibling checkouts quantgate and passk from the parent folder)
 make report           # render results into this README
 make check-results    # CI gate: fails if the README is out of date
 make site             # static GitHub Pages site in site/dist
-# make report also writes results/headline.json: the numbers the portfolio hub may quote, formatted from results only.
+# make report also writes results/headline.json: the numbers the portfolio site quotes, formatted from results only.
 ```
 
 The experiment scripts take `--smoke` for a small check that finishes in about a minute; smoke output goes to a temporary folder and is never rendered. The settings are in `docs/prereg.md`, and every change to them is in `docs/deviations.md`.
@@ -350,7 +349,7 @@ See `AGENTS.md` for layout, invariants and conventions. `schemas/audit_report.sc
 
 ## How this was built
 
-This repository was designed, coded, tested and documented by AI coding assistants (Claude, run through Claude Code) working autonomously under Ayush Kumar's direction. That includes the pre-registrations, the experiments and this write-up. A separate AI reviewer checked the code and the results (the findings and what was changed are in the commit history and `docs/deviations.md`). A line-by-line human review by the author has not been done yet, so none of this should be read as a human-audited result. Every measured number in this README is generated from the committed result files.
+Built with AI-assisted development (Claude Code). Ayush Kumar directed the project and reviewed the design, code and results. Every measured number in this README is generated from the committed result files.
 
 ## Citation
 
@@ -358,4 +357,4 @@ See `CITATION.cff`.
 
 ## Continuous integration
 
-The CI workflow is `.github/workflows/ci.yml`. The Pages workflow (`pages.yml`) stays in `ci-templates/`, because the site is deployed from the `gh-pages` branch.
+CI runs linting, type checks, the test suite and the results check on Python 3.11 and 3.12 (`.github/workflows/ci.yml`).

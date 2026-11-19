@@ -1,11 +1,12 @@
-"""Frozen public data types for benchlint.
+"""Public data types for benchlint: dataset specs, checks and reports.
 
-Source of truth: DECISION.md section 4.3 (benchlint). Do not change these models without
-an orchestrator-approved interface change. Every top-level report carries ``schema_version``.
+Changes to these models need a ``schema_version`` decision and an entry in docs/deviations.md.
+Every top-level report carries ``schema_version``.
 
 Conventions used here:
 - A field typed ``X | None`` with no default is required and nullable (the key must be present).
-- Defaults are given only where DECISION.md states one, or an empty container for list fields.
+- Defaults are given only where docs/prereg.md or docs/deviations.md sets one, or an empty
+  container for list fields.
 """
 
 from __future__ import annotations
@@ -86,8 +87,8 @@ class ShortcutConfig(BaseModel):
 class CheckConfig(BaseModel):
     """Which checks run and with what settings.
 
-    Note: DECISION.md leaves the types of ``exact``, ``labels`` and ``canary`` unspecified.
-    Booleans are used here as a placeholder; see the scaffold report for the open question.
+    Note: the design docs do not specify the types of ``exact``, ``labels`` and ``canary``;
+    booleans are used here.
     """
 
     exact: bool = True
@@ -101,8 +102,9 @@ class CheckConfig(BaseModel):
 class AuditSpec(BaseModel):
     """Top-level audit file: a dataset plus the checks to run on it.
 
-    This is what ``benchlint audit spec.yaml`` loads (DECISION update: DatasetSpec alone has no
-    place for check settings). YAML layout: ``dataset:`` (a DatasetSpec) and optional ``checks:``.
+    This is what ``benchlint audit spec.yaml`` loads. A DatasetSpec alone has no place for check
+    settings, so the audit file wraps it. YAML layout: ``dataset:`` (a DatasetSpec) and optional
+    ``checks:``.
     """
 
     dataset: DatasetSpec

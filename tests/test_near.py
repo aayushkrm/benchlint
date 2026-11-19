@@ -137,7 +137,7 @@ def test_unrelated_texts_produce_no_near_duplicates() -> None:
 def test_template_phrasing_is_flagged_and_shows_in_histogram() -> None:
     """Template-driven texts share most shingles, so they are flagged. The histogram exposes it.
 
-    This is the false-positive risk named in DECISION.md section 2.3. Only the template's
+    This is the false-positive risk for template text (docs/limitations.md). Only the template's
     shared shingles are checked here, not whether the flags are wrong.
     """
     template = " ".join(_words(30, seed=21))

@@ -163,11 +163,11 @@ Stop rules:
 
 Script: `scripts/run_e3.py`. Output: `results/e3/*.json`, `results/e3/env.json`.
 
-## E4. Dogfooding (filled in later)
+## E4. Dogfooding
 
 Planned: run benchlint over the ARC and GSM8K evaluation subsets of the sibling project
 `quantgate` against their train splits, and over the task instructions of the sibling project
-`passk` (near-duplicate check). The orchestrator writes E4 once the sister repositories exist.
+`passk` (near-duplicate check). E4 is written once the sister repositories exist (since run; see the E4 settings amendment below).
 Its settings, sizes and results are not pre-stated here. The same rules apply: report whatever
 comes out, with n and CI, and log any change in `docs/deviations.md`.
 
@@ -191,7 +191,7 @@ Recorded in `docs/deviations.md`, with the reasons:
   40, long 41 or more), not 30 and 60.
 - E1 false-positive pairs are drawn from the 600 clean controls.
 - The shortcut check's training cap for SNLI and MNLI is 100,000 rows.
-- Wording only: the E2 stop rule refers to the initial run (banned-word rule, DECISION section 6.9).
+- Wording only: the E2 stop rule refers to the initial run (banned-word rule, AGENTS.md invariant 9).
 - Literature check (2026-11-19, after the first E2 run): SNLI test 67.0 and MultiNLI matched 53.9 are verified against Table 2 of Gururangan et al. (2018), arXiv:1803.02324. The check required by the E2 section is satisfied; the MNLI constant in the first run (53) is corrected, see docs/deviations.md.
 
 ## E4 settings (amendment, 2026-11-19, committed before any E4 run)

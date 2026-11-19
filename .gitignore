@@ -16,7 +16,7 @@ reports/
 demo_out/
 site/dist/
 
-# Model weights and raw generations stay local (DECISION.md section 5, section 6 rule 10)
+# Model weights and raw generations stay local
 *.gguf
 results/**/raw/
 *.raw.jsonl

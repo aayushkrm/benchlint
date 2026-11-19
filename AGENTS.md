@@ -19,13 +19,13 @@ make test         # pytest -m "not model"
 make demo         # benchlint demo (synthetic data, under 30 s, no downloads)
 ```
 
-CI (`.github/workflows/ci.yml`) runs ruff, mypy and pytest on Linux for Python 3.11 and 3.12.
+CI (`.github/workflows/ci.yml`) runs ruff, mypy, pytest and `make check-results` on Linux for Python 3.11 and 3.12.
 
 ## Layout
 
 ```
 src/benchlint/
-  schema.py        FROZEN pydantic models (DECISION.md section 4.3). Orchestrator approval only.
+  schema.py        pydantic models for specs and reports (see invariant 1)
   io.py            loaders: HF (with parquet fallback), JSONL, CSV, parquet
   normalize.py     text normalisation
   checks/          exact, near, ngram, labels, shortcut, canary
@@ -34,7 +34,7 @@ src/benchlint/
   cli.py           typer app: audit, check, canary, demo
   demo_data/       synthetic dataset with planted leaks (labelled SYNTHETIC)
 specs/             DatasetSpec YAML files, one per dataset
-tests/             pytest; tests/test_<module>.py next to the owner's module
+tests/             pytest; tests/test_<module>.py next to the module it tests
 scripts/envinfo.py environment provenance JSON (no hostname, no username)
 results/           committed result JSON (generated, never hand-edited)
 docs/              design, prereg (committed before runs), deviations, limitations
@@ -43,8 +43,8 @@ docs/              design, prereg (committed before runs), deviations, limitatio
 
 ## Invariants
 
-1. `src/benchlint/schema.py` is frozen. Other work packages request interface changes in
-   their report; they do not edit it. Keep a local adapter until a change is approved.
+1. Change `src/benchlint/schema.py` only with a `schema_version` decision and an entry in
+   `docs/deviations.md`. Until then, keep a local adapter rather than editing the models.
 2. `results/` is generated. Never type a measured number into README, docs or the site.
    Numbers come from result JSON through the render script.
 3. Every result carries `env.json` or equivalent provenance from `scripts/envinfo.py`.

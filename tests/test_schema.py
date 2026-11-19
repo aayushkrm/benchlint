@@ -1,4 +1,4 @@
-"""JSON round-trip tests for every frozen benchlint model (DECISION.md section 4.3)."""
+"""JSON round-trip tests for every public benchlint model."""
 
 from __future__ import annotations
 

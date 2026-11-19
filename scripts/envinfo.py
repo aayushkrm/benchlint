@@ -1,4 +1,4 @@
-"""Print environment information as JSON, for result provenance (DECISION.md section 6, rule 2).
+"""Print environment information as JSON, for result provenance (see AGENTS.md, invariant 3).
 
 Output keys: git_sha, git_dirty, utc_time, cpu_model, cpu_flags, cores_physical, cores_logical,
 ram_bytes, os_name, os_version, machine, python_version, packages.

@@ -212,7 +212,7 @@ def _fixture(root: Path, *, with_e3: bool = True) -> Path:
     return root
 
 
-# --- builder ---------------------------------------------------------------------------------
+# --- build_headline -------------------------------------------------------------------------------
 
 
 def test_build_headline_from_fixtures_has_the_expected_items(tmp_path: Path) -> None:

@@ -1,6 +1,6 @@
 """Command-line interface (typer).
 
-Exit codes (DECISION.md section 2): 0 = pass, 1 = check failed (finding at or above
+Exit codes: 0 = pass, 1 = check failed (finding at or above
 ``--fail-on``), 2 = usage or runtime error. Every command gets ``--json`` output.
 """
 
