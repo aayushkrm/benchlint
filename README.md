@@ -355,3 +355,9 @@ This repository was designed, coded, tested and documented by AI coding assistan
 ## Citation
 
 See `CITATION.cff`.
+
+## Continuous integration
+
+The workflow files are in `ci-templates/`. They are not active yet because the publishing
+token had no `workflow` scope. To turn them on, run `gh auth refresh -h github.com -s workflow`
+and then `scripts/enable-ci.sh`.

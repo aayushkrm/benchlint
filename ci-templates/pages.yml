@@ -1,0 +1,64 @@
+# Builds the static site from committed results/ and deploys it to GitHub Pages.
+# Guarded: if results/ holds no JSON yet, nothing is built or deployed. Needs Pages enabled
+# for the repository with "GitHub Actions" as the source.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["results/**", "src/**", "scripts/**", "specs/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      has_results: ${{ steps.guard.outputs.has_results }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: guard
+        name: Check for committed results
+        run: |
+          if find results -name '*.json' -print -quit | grep -q .; then
+            echo "has_results=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_results=false" >> "$GITHUB_OUTPUT"
+            echo "No results/**/*.json yet; skipping the Pages build."
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.has_results == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Sync dependencies
+        run: uv sync --extra dev
+      - name: Build site
+        run: make site
+      - name: Check the site was built
+        run: test -f site/dist/index.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
