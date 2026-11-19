@@ -120,6 +120,16 @@ def arc_text(fields: dict[str, str]) -> str:
     return " ".join([fields["question"], *choices])
 
 
+def arc_question_text(fields: dict[str, str]) -> str:
+    """The question alone: the text the E3 ARC spec uses. Supplementary check only."""
+    return fields["question"]
+
+
+def gsm8k_question_and_answer(fields: dict[str, str]) -> str:
+    """Question and answer: the text the E3 GSM8K spec uses. Supplementary check only."""
+    return f"{fields['question']} {fields['answer']}"
+
+
 def gsm8k_text(fields: dict[str, str]) -> str:
     """The question: quantgate's GSM8K prompt does not contain the gold answer."""
     return fields["question"]
@@ -266,8 +276,19 @@ def gsm8k_key(record: Record) -> str:
     return record.id.split(":", 1)[1]
 
 
+def _supplementary(main: dict[str, Any], text: str, checks: dict[str, Any]) -> dict[str, Any]:
+    """A check on the same subset with another text. Not pre-registered: reported as such."""
+    return {
+        "pre_registered": False,
+        "text": text,
+        "n_eval": main["n_eval"],
+        "n_train": main["n_train"],
+        "checks": checks,
+    }
+
+
 def run_arc(root: Path) -> dict[str, Any]:
-    return run_quantgate(
+    main = run_quantgate(
         root,
         ARC_SUBSET,
         "allenai/ai2_arc",
@@ -279,10 +300,26 @@ def run_arc(root: Path) -> dict[str, Any]:
         "id",
         "arc-easy",
     )
+    supp = run_quantgate(
+        root,
+        ARC_SUBSET,
+        "allenai/ai2_arc",
+        "ARC-Easy",
+        arc_key,
+        arc_question_text,
+        "question",
+        "answerKey",
+        "id",
+        "arc-easy",
+    )
+    main["supplementary"] = _supplementary(
+        main, "supplementary, not pre-registered: question only (the E3 ARC text)", supp["checks"]
+    )
+    return main
 
 
 def run_gsm8k(root: Path) -> dict[str, Any]:
-    return run_quantgate(
+    main = run_quantgate(
         root,
         GSM8K_SUBSET,
         "openai/gsm8k",
@@ -294,6 +331,24 @@ def run_gsm8k(root: Path) -> dict[str, Any]:
         None,
         "gsm8k",
     )
+    supp = run_quantgate(
+        root,
+        GSM8K_SUBSET,
+        "openai/gsm8k",
+        "main",
+        gsm8k_key,
+        gsm8k_question_and_answer,
+        "question",
+        None,
+        None,
+        "gsm8k",
+    )
+    main["supplementary"] = _supplementary(
+        main,
+        "supplementary, not pre-registered: question and answer (the E3 GSM8K text)",
+        supp["checks"],
+    )
+    return main
 
 
 # --- passk: the 24 instructions ------------------------------------------------------------
