@@ -47,7 +47,7 @@
     },
     {
       "ci": "[0.43%, 0.56%]",
-      "detail": "Largest cross-split duplicate count among the six E3 benchmarks. Selection: per benchmark, the cross-split exact or near finding with the highest count; then the two largest counts across benchmarks. Exact counts test items that repeat a train item (denominator: the measured split). Near counts items with a 5-gram Jaccard partner at or above 0.8 in the other split (denominator: all evaluable items of both splits). Matching is lexical; shared templates can match without contamination.",
+      "detail": "Largest cross-split duplicate count among the six E3 benchmarks. Selection: per benchmark, the cross-split exact or near finding with the highest count; then the largest count across benchmarks. Exact counts test items that repeat a train item (denominator: the measured split). Near counts items with a 5-gram Jaccard partner at or above 0.8 in the other split (denominator: all evaluable items of both splits). Matching is lexical; shared templates can match without contamination.",
       "featured": true,
       "id": "e3_imdb_cross_near",
       "label": "E3 imdb: cross-split near duplicates",
@@ -57,15 +57,15 @@
       "value": "246 of 50000 items (0.49%)"
     },
     {
-      "ci": "[0.14%, 0.19%]",
-      "detail": "Largest cross-split duplicate count among the six E3 benchmarks. Selection: per benchmark, the cross-split exact or near finding with the highest count; then the two largest counts across benchmarks. Exact counts test items that repeat a train item (denominator: the measured split). Near counts items with a 5-gram Jaccard partner at or above 0.8 in the other split (denominator: all evaluable items of both splits). Matching is lexical; shared templates can match without contamination.",
+      "ci": "[0.00%, 1.26%]",
+      "detail": "The committed 300-item quantgate eval subset against the ARC-Easy train split, on the text quantgate's prompt holds (question and choices), at the E3 thresholds. Exact matches: 0. Supplementary, not pre-registered (E3's question-only text): 0 of 300. Passk: 0 of 24 instructions have a near duplicate; highest pairwise 5-gram Jaccard 0.21. A null result for near duplicates here. Small n: these are observations about these inputs, not a benchmark result.",
       "featured": false,
-      "id": "e3_ag-news_cross_near",
-      "label": "E3 ag-news: cross-split near duplicates",
-      "n": 127600,
-      "source": "results/e3/ag-news.json",
+      "id": "e4_quantgate_arc_easy_near",
+      "label": "E4 dogfooding: quantgate ARC-Easy eval items with a train near-duplicate",
+      "n": 300,
+      "source": "results/e4/quantgate_arc_easy.json",
       "synthetic": false,
-      "value": "208 of 127600 items (0.16%)"
+      "value": "0 of 300 (0.00%); pre-registered text"
     }
   ],
   "links": {

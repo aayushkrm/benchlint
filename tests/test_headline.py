@@ -223,7 +223,6 @@ def test_build_headline_from_fixtures_has_the_expected_items(tmp_path: Path) -> 
         "e1_short_texts",
         "e2_snli",
         "e3_imdb_cross_near",
-        "e3_gsm8k_cross_exact",
     ]
     assert len(ids) <= MAX_ITEMS
     assert validate(headline, load_schema()) == []
@@ -248,10 +247,10 @@ def test_items_format_their_values_from_the_fixture_numbers(tmp_path: Path) -> N
     assert "Gururangan et al. 2018" in snli["detail"]
 
 
-def test_e3_items_are_ranked_and_only_the_top_is_featured(tmp_path: Path) -> None:
+def test_e3_shows_only_the_top_finding_and_it_is_featured(tmp_path: Path) -> None:
     items = {i["id"]: i for i in build_headline(_fixture(tmp_path / "r"))["items"]}
     assert items["e3_imdb_cross_near"]["featured"] is True
-    assert items["e3_gsm8k_cross_exact"]["featured"] is False
+    assert "e3_gsm8k_cross_exact" not in items
     assert items["e3_imdb_cross_near"]["value"] == "9 of 200 items (4.50%)"
     assert "within" not in items["e3_imdb_cross_near"]["detail"].split(".")[0]
 
@@ -286,7 +285,7 @@ def test_environment_text_names_the_machine() -> None:
 # --- E3 selection ----------------------------------------------------------------------------
 
 
-def test_selection_takes_the_highest_cross_count_per_benchmark_then_the_top_two() -> None:
+def test_selection_takes_the_highest_cross_count_per_benchmark_then_the_largest() -> None:
     per_dataset = [
         (
             "a",
@@ -301,10 +300,7 @@ def test_selection_takes_the_highest_cross_count_per_benchmark_then_the_top_two(
         ("d", [_finding("labels", "cross", 50, 100, ["train", "test"])]),
     ]
     picked = select_cross_findings(per_dataset)
-    assert [(name, f["check"], f["count"]) for name, f in picked] == [
-        ("b", "exact", 20),
-        ("a", "near", 8),
-    ]
+    assert [(name, f["check"], f["count"]) for name, f in picked] == [("b", "exact", 20)]
 
 
 def test_selection_ties_prefer_the_higher_rate_then_exact_then_name() -> None:
@@ -312,7 +308,7 @@ def test_selection_ties_prefer_the_higher_rate_then_exact_then_name() -> None:
         ("z", [_finding("exact", "cross", 4, 100, ["train", "test"])]),
         ("y", [_finding("exact", "cross", 4, 50, ["train", "test"])]),
     ]
-    assert [name for name, _ in select_cross_findings(tie_rate)] == ["y", "z"]
+    assert [name for name, _ in select_cross_findings(tie_rate)] == ["y"]
     tie_all = [
         (
             "n",
@@ -357,3 +353,43 @@ def test_render_check_fails_when_headline_is_missing_then_passes(tmp_path: Path)
     written = (results / "headline.json").read_text(encoding="utf-8")
     assert written == headline_text(build_headline(results))
     assert json.loads(written)["tool"] == "benchlint"
+
+
+def test_e4_item_reports_the_pre_registered_count_and_the_supplementary_count(
+    tmp_path: Path,
+) -> None:
+    root = _fixture(tmp_path / "r")
+    arc = {
+        "n_eval": 300,
+        "n_train": 2251,
+        "checks": {
+            "exact": {"matched": 0, "n": 300, "rate": 0.0, "ci_low": 0.0, "ci_high": 0.012},
+            "near": {"matched": 0, "n": 300, "rate": 0.0, "ci_low": 0.0, "ci_high": 0.012},
+        },
+        "supplementary": {
+            "n_eval": 300,
+            "n_train": 2251,
+            "checks": {
+                "exact": {"matched": 1, "n": 300, "rate": 1 / 300, "ci_low": 0.0, "ci_high": 0.02},
+                "near": {"matched": 2, "n": 300, "rate": 2 / 300, "ci_low": 0.0, "ci_high": 0.02},
+            },
+        },
+    }
+    passk = {
+        "n_tasks": 24,
+        "near": {"matched": 0},
+        "pairwise": {"max": 0.206},
+    }
+    write_json(
+        root / "e4" / "summary.json",
+        {"mode": "full", "datasets": {"quantgate_arc_easy": arc, "passk": passk}},
+    )
+    items = {i["id"]: i for i in build_headline(root)["items"]}
+    item = items["e4_quantgate_arc_easy_near"]
+    assert item["value"].startswith("0 of 300")
+    assert item["synthetic"] is False and item["featured"] is False
+    assert "Supplementary, not pre-registered" in item["detail"]
+    assert "Exact matches: 0" in item["detail"]
+    assert "highest pairwise 5-gram Jaccard 0.21" in item["detail"]
+    assert item["source"] == "results/e4/quantgate_arc_easy.json"
+    assert validate(build_headline(root), load_schema()) == []

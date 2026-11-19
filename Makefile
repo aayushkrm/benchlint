@@ -29,6 +29,7 @@ results:
 	uv run python scripts/calibrate.py
 	uv run python scripts/run_e2.py
 	uv run python scripts/run_e3.py
+	uv run python scripts/run_e4.py
 
 # E1 summary (LSH recall, true-Jaccard bins, length arithmetic) from the stored recall stage.
 summary:

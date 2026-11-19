@@ -60,8 +60,9 @@ What each check can and cannot show. Read before quoting a finding.
 
 - Results depend on the dataset versions the Hub served at run time. The spec files name the
   configs and splits checked on 2026-11-19; the Hub can change.
-- Some dataset licences are not stated on their cards (see README). benchlint does not
-  redistribute the text.
+- Some dataset licences are not stated on their cards (see README). Result files hold short
+  excerpts of matched items (at most 200 characters, at most five pairs per check), not full
+  copies, and each excerpt keeps its dataset's licence.
 
 ## Experiments
 
@@ -69,5 +70,6 @@ What each check can and cannot show. Read before quoting a finding.
   nothing about how often benchmarks leak.
 - E2 compares with literature values checked against Table 2 of the cited paper (arXiv:1803.02324), not measured here. The classifier differs from the
   one in the cited paper, so the comparison is about shortcut strength, not a replication.
-- E4 (dogfooding on the sibling projects) has not been run.
+- E4 covers small sibling inputs (300, 100 and 24 items). It is dogfooding, not a benchmark
+  result, and its null result says only what these inputs contain under these checks.
 - The E1 and E3 results come from working trees with uncommitted changes. The provenance table in the README and `docs/deviations.md` say which files, and what the recorded commit does and does not reproduce.

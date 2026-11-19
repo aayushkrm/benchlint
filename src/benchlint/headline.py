@@ -1,12 +1,13 @@
 """Headline numbers for the portfolio hub: results/headline.json (hub standard contract).
 
 Every value is formatted from full-mode result files. Nothing is typed by hand. The file has at
-most six items: two from E1, two from E2 and two from E3. Items whose result file is missing are
+most six items: two from E1, two from E2, one from E3 and one from E4 (E3 shows its top
+finding; the second-ranked one is in the README tables). Items whose result file is missing are
 left out, so an empty results folder gives an empty item list that still validates.
 
 Selection rule for E3 (deterministic): for each benchmark, the cross-split exact or near finding
 with the highest count (ties: higher rate, then exact before near). Across benchmarks, the two
-largest counts (ties: higher rate, then benchmark name). The top item is featured.
+largest count (ties: higher rate, then benchmark name). The top item is featured.
 """
 
 from __future__ import annotations
@@ -27,7 +28,8 @@ from benchlint.report import wilson_interval
 SCHEMA_VERSION = "1"
 TOOL = "benchlint"
 MAX_ITEMS = 6
-E3_ITEMS = 2
+E3_ITEMS = 1
+E4_ITEMS = 1
 TAGLINE = (
     "A linter for ML benchmarks: finds train/test leakage, near-duplicates, label conflicts "
     "and shortcut features before you trust a score."
@@ -218,7 +220,7 @@ def _e3_items(results_dir: Path) -> list[dict[str, Any]]:
                 "detail": (
                     "Largest cross-split duplicate count among the six E3 benchmarks. Selection: "
                     "per benchmark, the cross-split exact or near finding with the highest count; "
-                    "then the two largest counts across benchmarks. Exact counts test items that "
+                    "then the largest count across benchmarks. Exact counts test items that "
                     "repeat a train item (denominator: the measured split). Near counts items with "
                     "a 5-gram Jaccard partner at or above 0.8 in the other split (denominator: all "
                     "evaluable items of both splits). Matching is lexical; shared templates can "
@@ -234,9 +236,52 @@ def _e3_items(results_dir: Path) -> list[dict[str, Any]]:
     return items
 
 
+def _e4_items(results_dir: Path) -> list[dict[str, Any]]:
+    """E4 dogfooding: quantgate's ARC-Easy eval subset against its train split (pre-registered)."""
+    summary = load_full(results_dir / "e4" / "summary.json")
+    if summary is None:
+        return []
+    arc = summary["datasets"]["quantgate_arc_easy"]
+    near = arc["checks"]["near"]
+    exact = arc["checks"]["exact"]
+    n = arc["n_eval"]
+    lo, hi = wilson_interval(near["matched"], n)
+    supp = arc["supplementary"]["checks"]["near"]["matched"]
+    passk = summary["datasets"]["passk"]
+    pw = passk["pairwise"]
+    return [
+        {
+            "id": "e4_quantgate_arc_easy_near",
+            "label": "E4 dogfooding: quantgate ARC-Easy eval items with a train near-duplicate",
+            "value": f"{near['matched']} of {n} ({pct(near['rate'], 2)}); pre-registered text",
+            "detail": (
+                f"The committed {n}-item quantgate eval subset against the ARC-Easy train split, "
+                "on "
+                "the text quantgate's prompt holds (question and choices), at the E3 thresholds. "
+                f"Exact matches: {exact['matched']}. Supplementary, not pre-registered (E3's "
+                f"question-only text): {supp} of {n}. Passk: "
+                f"{passk['near']['matched']} of {passk['n_tasks']} instructions have a near "
+                f"duplicate; highest pairwise 5-gram Jaccard {pw['max']:.2f}. A null result for "
+                "near duplicates here. Small n: these are observations about these inputs, not a "
+                "benchmark result."
+            ),
+            "n": n,
+            "ci": f"[{pct(lo, 2)}, {pct(hi, 2)}]",
+            "synthetic": False,
+            "featured": False,
+            "source": "results/e4/quantgate_arc_easy.json",
+        }
+    ]
+
+
 def build_headline(results_dir: Path) -> dict[str, Any]:
     """The headline object for ``results_dir``, validated against the committed schema."""
-    items = [*_e1_items(results_dir), *_e2_items(results_dir), *_e3_items(results_dir)]
+    items = [
+        *_e1_items(results_dir),
+        *_e2_items(results_dir),
+        *_e3_items(results_dir),
+        *_e4_items(results_dir),
+    ]
     if len(items) > MAX_ITEMS:
         raise ValueError(f"headline has {len(items)} items; the contract allows {MAX_ITEMS}")
     headline: dict[str, Any] = {

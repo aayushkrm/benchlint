@@ -64,6 +64,7 @@ def build(results_dir: Path, out_dir: Path) -> list[Path]:
             res["e1_summary"],
             res["e3_reports"],
             provenance_envs(res),
+            e4=res["e4"],
         ),
         encoding="utf-8",
     )

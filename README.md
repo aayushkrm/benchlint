@@ -2,7 +2,7 @@
 
 A linter for ML benchmarks. It finds train/test leakage, exact and near-duplicates, label conflicts, n-gram contamination and shortcut features before you trust a benchmark score.
 
-> **Status: v0.1.0 candidate with committed results.** E1 (detector calibration), E2 (hypothesis-only replication) and E3 (leakage scan) are full-mode runs, rendered below. The provenance table at the end of the findings section gives each run's commit and working-tree state. E1 and E3 come from working trees with uncommitted changes; E2 was re-run from a clean tree. **E4 (dogfooding on the sibling projects) has not been run.** Nothing is published (no GitHub repository, no release, no Pages site) until the author confirms.
+> **Status: v0.1.0 candidate with committed results.** E1 (detector calibration), E2 (hypothesis-only replication) and E3 (leakage scan) are full-mode runs, rendered below. The provenance table at the end of the findings section gives each run's commit and working-tree state. E1 and E3 come from working trees with uncommitted changes; E2 was re-run from a clean tree. **E4 (dogfooding on the sibling projects' inputs) has been run; its result is a null result for near duplicates.** Nothing is published (no GitHub repository, no release, no Pages site) until the author confirms.
 
 ## Why
 
@@ -72,6 +72,11 @@ Specs are YAML. An AuditSpec has a `dataset:` mapping (source, text and label fi
   re-run from a clean tree after the literature correction.
 - **Data.** Results depend on the Hugging Face Hub versions served at run time. The spec files
   name each dataset, config and split.
+- **E4 (dogfooding).** `scripts/run_e4.py` checks quantgate's committed ARC-Easy and GSM8K eval
+  subsets against their train splits, and passk's 24 task instructions, under the settings in
+  the E4 amendment of `docs/prereg.md` (committed before the run). It reads the sibling
+  checkouts in place and records their commits, dirty flags and changed paths, never absolute
+  paths.
 - **Rendering.** `make report` writes the blocks in this file and `results/headline.json` from
   `results/`. `make check-results` (run in CI) fails if either is out of date.
 
@@ -188,7 +193,9 @@ Cells with fewer than 20 planted pairs are marked low n. Bins are word-count ter
 ## Findings on public benchmarks (E2 and E3)
 
 <!-- results:start -->
-Source: results/e2/*.json, results/e3/summary.json and results/e3/<dataset>.json (full mode).
+Source: results/e2/*.json, results/e3/summary.json and results/e3/<dataset>.json, and results/e4/summary.json (full mode).
+
+E4 result: a null result. No eval item in either quantgate subset had a train partner, and no passk instruction had a near duplicate at 0.8.
 
 ### E2 hypothesis-only accuracy against reported literature
 
@@ -244,6 +251,32 @@ Literature values: Gururangan et al. (2018), Annotation Artifacts in Natural Lan
 
 A finding means the lexical check matched. Shared templates can match without contamination. Near findings list both splits; the scope column separates cross-split counts from within-split counts. Example pairs are in results/e3/.
 
+### E4 quantgate eval subsets against their train splits (dogfooding, small n)
+
+| Dataset | Check | Status | Eval items matched | Rate [95% CI] | Train items |
+|---|---|---|---|---|---|
+| ARC-Easy | exact | pre-registered text | 0 of 300 | 0.00% [0.00%, 1.26%] | 2251 |
+| ARC-Easy | near | pre-registered text | 0 of 300 | 0.00% [0.00%, 1.26%] | 2251 |
+| ARC-Easy | exact | supplementary (E3 text, not pre-registered) | 0 of 300 | 0.00% [0.00%, 1.26%] | 2251 |
+| ARC-Easy | near | supplementary (E3 text, not pre-registered) | 0 of 300 | 0.00% [0.00%, 1.26%] | 2251 |
+| GSM8K | exact | pre-registered text | 0 of 100 | 0.00% [0.00%, 3.70%] | 7473 |
+| GSM8K | near | pre-registered text | 0 of 100 | 0.00% [0.00%, 3.70%] | 7473 |
+| GSM8K | exact | supplementary (E3 text, not pre-registered) | 0 of 100 | 0.00% [0.00%, 3.70%] | 7473 |
+| GSM8K | near | supplementary (E3 text, not pre-registered) | 0 of 100 | 0.00% [0.00%, 3.70%] | 7473 |
+
+Cross-split only: an eval item counts when it has a train partner. Exact matches are a subset of near matches. Quantgate at 312137c290 (uncommitted changes: yes; no E4 input is among its uncommitted paths). Passk at b281cec088 (uncommitted changes: no).
+
+### E4 passk task instructions (dogfooding, n = 24)
+
+| Check | Count | Rate [95% CI] |
+|---|---|---|
+| exact duplicates (redundant copies) | 0 of 24 | 0.00% [0.00%, 13.80%] |
+| near duplicates at 0.8 (instructions with a partner) | 0 of 24 | 0.00% [0.00%, 13.80%] |
+| pairs at or above 0.8 (5-gram Jaccard) | 0 of 276 | 0.00% [0.00%, 1.37%] |
+| pairwise 5-gram Jaccard: minimum / median / maximum | 0.000 / 0.000 / 0.206 | distribution, no test |
+
+Within the set. Instructions are 3 to 25 words, so a 5-gram shingle is a large part of each one. No threshold was chosen for templated variants: the Jaccard distribution is the description. Passk at b281cec088.
+
 ### Provenance of the committed results (from each env.json)
 
 | Experiment | Commit | Working tree at run | Recorded (UTC) |
@@ -251,6 +284,7 @@ A finding means the lexical check matched. Shared templates can match without co
 | E1 | 6172c97baf | uncommitted changes; the paths were not recorded (envinfo before the change) | 2026-11-18T20:19:46+00:00 |
 | E2 | 0dc2ff2f1b | clean tree (no uncommitted changes outside results/); diff hash f3188c9bb48b | 2026-11-18T22:40:28+00:00 |
 | E3 | b0eddc1f07 | uncommitted changes; the paths were not recorded (envinfo before the change) | 2026-11-18T20:44:18+00:00 |
+| E4 | c443d8ef0e | clean tree (no uncommitted changes outside results/); diff hash f3188c9bb48b | 2026-11-19T03:59:46+00:00 |
 
 Each row is read from that experiment's env.json. A run from a dirty tree is not reproducible from the commit alone. The code differences are in docs/deviations.md.
 <!-- results:end -->
@@ -270,14 +304,14 @@ Literature values in E2 are taken from Table 2 of Gururangan et al. (2018), arXi
 
 - A clean report does not show that a benchmark is clean. It shows that these checks did not fire at the stated thresholds.
 - It does not measure model memorisation, and it does not check that a score was computed correctly.
-- E4 (dogfooding on the sibling projects' eval sets) has not been run.
+- E4 is dogfooding on small inputs (300, 100 and 24 items). It says what those inputs contain under these checks, not how benchmarks or models compare.
 - The E1 planted copies are synthetic edits of real text. They measure the detector, not the frequency of leaks in any benchmark.
 - Results apply only to the datasets in `specs/`, as the Hugging Face Hub served them when they were run.
 - There is no web interface beyond the static reports.
 
 ## Datasets and licences
 
-The licences below are as stated on each dataset card when checked on 2026-11-19. benchlint does not redistribute any dataset text; it reads the Hub at run time.
+The licences below are as stated on each dataset card when checked on 2026-11-19. benchlint does not copy whole dataset texts into the repository, and it reads the Hub at run time. Its result files do contain short excerpts of matched items (at most 200 characters, at most five pairs per check) so that a match can be checked. Each excerpt keeps the licence of its dataset.
 
 | Dataset (Hub id) | Used for | Licence |
 |---|---|---|

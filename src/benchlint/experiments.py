@@ -534,12 +534,139 @@ def _finding_scopes(
     return [_scope_label(rf.get("details", {}).get("scope")) for rf in report_findings]
 
 
+def e4_tables(e4: dict[str, Any] | None) -> list[Table]:
+    """The E4 tables: quantgate eval subsets against train, and the passk instructions.
+
+    Dogfooding on small inputs. A null result is stated as one, and the sibling snapshot and
+    whether any E4 input is among a sibling's uncommitted paths are computed from the summary.
+    """
+    if e4 is None:
+        return []
+    ds = e4["datasets"]
+    sib = e4["siblings"]
+    rows: list[tuple[str, ...]] = []
+    for key, label in (("quantgate_arc_easy", "ARC-Easy"), ("quantgate_gsm8k", "GSM8K")):
+        d = ds[key]
+        n = d["n_eval"]
+        for check in ("exact", "near"):
+            c = d["checks"][check]
+            rows.append(
+                (
+                    label,
+                    check,
+                    "pre-registered text",
+                    f"{c['matched']} of {n}",
+                    f"{pct(c['rate'], 2)} [{pct(c['ci_low'], 2)}, {pct(c['ci_high'], 2)}]",
+                    str(d["n_train"]),
+                )
+            )
+        supp = d["supplementary"]
+        for check in ("exact", "near"):
+            c = supp["checks"][check]
+            rows.append(
+                (
+                    label,
+                    check,
+                    "supplementary (E3 text, not pre-registered)",
+                    f"{c['matched']} of {supp['n_eval']}",
+                    f"{pct(c['rate'], 2)} [{pct(c['ci_low'], 2)}, {pct(c['ci_high'], 2)}]",
+                    str(supp["n_train"]),
+                )
+            )
+    qg_dirty = set(sib["quantgate"].get("git_dirty_paths") or [])
+    qg_inputs = {f["path"] for f in sib["quantgate"]["subset_files"]}
+    overlap = sorted(qg_dirty & qg_inputs)
+    input_note = (
+        "no E4 input is among its uncommitted paths"
+        if not overlap
+        else f"E4 inputs among its uncommitted paths: {', '.join(overlap)}"
+    )
+    quantgate_table = Table(
+        title="E4 quantgate eval subsets against their train splits (dogfooding, small n)",
+        headers=(
+            "Dataset",
+            "Check",
+            "Status",
+            "Eval items matched",
+            "Rate [95% CI]",
+            "Train items",
+        ),
+        rows=tuple(rows),
+        note=(
+            "Cross-split only: an eval item counts when it has a train partner. Exact matches are "
+            "a subset of near matches. Quantgate at "
+            f"{str(sib['quantgate']['git_sha'] or 'n/a')[:10]} "
+            f"(uncommitted changes: {'yes' if sib['quantgate']['git_dirty'] else 'no'}; "
+            f"{input_note}). Passk at {str(sib['passk']['git_sha'] or 'n/a')[:10]} "
+            f"(uncommitted changes: {'yes' if sib['passk']['git_dirty'] else 'no'})."
+        ),
+    )
+    pk = ds["passk"]
+    n = pk["n_tasks"]
+    pw = pk["pairwise"]
+    pk_rows = (
+        (
+            "exact duplicates (redundant copies)",
+            f"{pk['exact']['matched']} of {n}",
+            f"{pct(pk['exact']['rate'], 2)} [{pct(pk['exact']['ci_low'], 2)}, "
+            f"{pct(pk['exact']['ci_high'], 2)}]",
+        ),
+        (
+            "near duplicates at 0.8 (instructions with a partner)",
+            f"{pk['near']['matched']} of {n}",
+            f"{pct(pk['near']['rate'], 2)} [{pct(pk['near']['ci_low'], 2)}, "
+            f"{pct(pk['near']['ci_high'], 2)}]",
+        ),
+        (
+            "pairs at or above 0.8 (5-gram Jaccard)",
+            f"{pw['at_or_above_threshold']['matched']} of {pw['pairs']}",
+            f"{pct(pw['at_or_above_threshold']['rate'], 2)} [{pct(pw['at_or_above_threshold']['ci_low'], 2)}, "
+            f"{pct(pw['at_or_above_threshold']['ci_high'], 2)}]",
+        ),
+        (
+            "pairwise 5-gram Jaccard: minimum / median / maximum",
+            f"{pw['min']:.3f} / {pw['median']:.3f} / {pw['max']:.3f}",
+            "distribution, no test",
+        ),
+    )
+    lo, hi = pk["word_range"]
+    passk_table = Table(
+        title=f"E4 passk task instructions (dogfooding, n = {n})",
+        headers=("Check", "Count", "Rate [95% CI]"),
+        rows=pk_rows,
+        note=(
+            f"Within the set. Instructions are {lo} to {hi} words, so a 5-gram shingle is a large "
+            "part of each one. No threshold was chosen for templated variants: the Jaccard "
+            "distribution is the description. Passk at "
+            f"{str(sib['passk']['git_sha'] or 'n/a')[:10]}."
+        ),
+    )
+    return [quantgate_table, passk_table]
+
+
+def _e4_null_note(e4: dict[str, Any]) -> str:
+    """A plain sentence saying whether E4 found anything, from the counts."""
+    ds = e4["datasets"]
+    total = (
+        ds["quantgate_arc_easy"]["checks"]["near"]["matched"]
+        + ds["quantgate_gsm8k"]["checks"]["near"]["matched"]
+        + ds["passk"]["near"]["matched"]
+    )
+    if total == 0:
+        return (
+            "E4 result: a null result. No eval item in either quantgate subset had a train "
+            "partner, and no passk instruction had a near duplicate at 0.8."
+        )
+    return f"E4 result: {total} near-duplicate matches across the inputs; see the tables."
+
+
 def findings_tables(
     e2: list[dict[str, Any]],
     e3: dict[str, Any] | None,
     e3_reports: dict[str, dict[str, Any]] | None = None,
+    e4: dict[str, Any] | None = None,
 ) -> list[Table]:
-    """The E2 and E3 tables for the README and the site.
+    """The E2, E3 and E4 tables for the README and the site.
 
     E3 rows carry the scope (cross-split or within-split) and the split pair, read from each
     dataset's report, so a within-split count is not read as a cross-split one.
@@ -626,6 +753,7 @@ def findings_tables(
                 ),
             )
         )
+    tables.extend(e4_tables(e4))
     return tables
 
 
@@ -734,16 +862,21 @@ def findings_block(
     e3: dict[str, Any] | None,
     e3_reports: dict[str, dict[str, Any]] | None,
     envs: Sequence[tuple[str, dict[str, Any] | None]],
+    e4: dict[str, Any] | None = None,
 ) -> str:
-    """README block for E2 and E3 with their provenance, or the no-results text."""
-    tables = findings_tables(e2, e3, e3_reports)
+    """README block for E2, E3 and E4 with their provenance, or the no-results text."""
+    tables = findings_tables(e2, e3, e3_reports, e4)
     if not tables:
         return NO_RESULTS
     header = (
-        "Source: results/e2/*.json, results/e3/summary.json and results/e3/<dataset>.json "
-        "(full mode)."
+        "Source: results/e2/*.json, results/e3/summary.json and results/e3/<dataset>.json, and "
+        "results/e4/summary.json (full mode)."
     )
-    return "\n\n".join([header, tables_markdown([*tables, provenance_table(envs)])])
+    e4_line = _e4_null_note(e4) if e4 is not None else ""
+    parts = [header, tables_markdown([*tables, provenance_table(envs)])]
+    if e4_line:
+        parts.insert(1, e4_line)
+    return "\n\n".join(parts)
 
 
 def render_index_html(
@@ -755,6 +888,7 @@ def render_index_html(
     summary: dict[str, Any] | None = None,
     e3_reports: dict[str, dict[str, Any]] | None = None,
     envs: Sequence[tuple[str, dict[str, Any] | None]] = (),
+    e4: dict[str, Any] | None = None,
 ) -> str:
     """The static site index: E1, E2 and E3 tables with provenance, and per-dataset links."""
     e1_html = (
@@ -762,7 +896,7 @@ def render_index_html(
         if calib
         else f"<p>{html.escape(NO_RESULTS)}</p>"
     )
-    findings = findings_tables(e2, e3, e3_reports)
+    findings = findings_tables(e2, e3, e3_reports, e4)
     if findings:
         findings.append(provenance_table(envs))
         e2_html = tables_html(findings)

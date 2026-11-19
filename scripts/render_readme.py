@@ -47,6 +47,8 @@ def load_results(results_dir: Path) -> dict[str, Any]:
         "e3": load_full(results_dir / "e3" / "summary.json"),
         "e3_reports": e3_reports(results_dir),
         "env_e3": read_json(results_dir / "e3" / "env.json"),
+        "e4": load_full(results_dir / "e4" / "summary.json"),
+        "env_e4": read_json(results_dir / "e4" / "env.json"),
     }
 
 
@@ -67,7 +69,12 @@ def e3_reports(results_dir: Path) -> dict[str, dict[str, Any]]:
 
 def provenance_envs(res: dict[str, Any]) -> list[tuple[str, dict[str, Any] | None]]:
     """The environment record of each experiment, in table order."""
-    return [("E1", res["env_e1"]), ("E2", res["env_e2"]), ("E3", res["env_e3"])]
+    return [
+        ("E1", res["env_e1"]),
+        ("E2", res["env_e2"]),
+        ("E3", res["env_e3"]),
+        ("E4", res["env_e4"]),
+    ]
 
 
 def render_blocks(results_dir: Path) -> list[str]:
@@ -75,7 +82,7 @@ def render_blocks(results_dir: Path) -> list[str]:
     res = load_results(results_dir)
     return [
         calibration_block(res["calib"], res["e1_summary"]),
-        findings_block(res["e2"], res["e3"], res["e3_reports"], provenance_envs(res)),
+        findings_block(res["e2"], res["e3"], res["e3_reports"], provenance_envs(res), res["e4"]),
     ]
 
 
