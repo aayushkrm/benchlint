@@ -193,3 +193,57 @@ Recorded in `docs/deviations.md`, with the reasons:
 - The shortcut check's training cap for SNLI and MNLI is 100,000 rows.
 - Wording only: the E2 stop rule refers to the initial run (banned-word rule, DECISION section 6.9).
 - Literature check (2026-11-19, after the first E2 run): SNLI test 67.0 and MultiNLI matched 53.9 are verified against Table 2 of Gururangan et al. (2018), arXiv:1803.02324. The check required by the E2 section is satisfied; the MNLI constant in the first run (53) is corrected, see docs/deviations.md.
+
+## E4 settings (amendment, 2026-11-19, committed before any E4 run)
+
+The E4 section above leaves the settings open. This amendment fixes them before the run. It is
+the only E4 text that the run follows; any later change goes in `docs/deviations.md`.
+
+**Scope.** E4 is dogfooding: benchlint applied to two sibling projects' inputs. Its n is small
+(300, 100 and 24 items), so its intervals are wide and it is not a benchmark result. Its question
+is whether the sibling inputs contain duplicates, not how a model performs.
+
+**Sibling inputs (read from the sibling checkouts, never copied with absolute paths).**
+
+- `quantgate`: `data/subsets/arc_easy_test.json` (300 committed IDs) and
+  `data/subsets/gsm8k_test.json` (100 committed IDs). The text is loaded from Hugging Face:
+  ARC-Easy (`allenai/ai2_arc`, config ARC-Easy) by its `id` column, and GSM8K (`openai/gsm8k`,
+  config main) by its 0-based row index in the test split. Every committed ID must be found, or
+  the run fails. No ID is dropped silently.
+- `passk`: the 24 task files `src/passk/tasks/labstock/*.yaml`, field `instruction` only. The
+  `initial_state` lists and other fields are not checked.
+
+**Text.** Eval and train items are compared on the text that quantgate's prompt contains: ARC
+question plus its choice texts, joined by spaces in the dataset's order; GSM8K question only (the
+gold answer is not in the prompt). This is a deviation from the E3 ARC spec, which uses the
+question alone. It is logged in `docs/deviations.md`.
+
+**Checks and thresholds (the same as E3, not tuned).** Exact duplicates on the normalised key;
+near duplicates with word 5-gram shingles, 128 MinHash permutations, seed 0, reporting threshold
+0.8 on exact Jaccard and LSH retrieval at 0.7. Labels, shortcut and n-gram checks are not run:
+they do not answer the dogfooding question.
+
+**Quantgate direction and metric.** The reference is the train split (ARC-Easy 2,251 items;
+GSM8K main 7,473 items). The measured items are the committed eval subset. The metric is the
+number of eval items with at least one train partner, out of the eval subset size, with a Wilson
+95% interval. Exact matches are a subset of near matches, because identical text has identical
+shingles. The E3 metric counted items on both sides, so the two are not comparable. Up to five
+example pairs per check are kept, sorted by similarity, each text cut to 200 characters. The
+same excerpt rule as E3 applies.
+
+**Passk.** Within the 24 instructions: exact duplicates (count of repeated instructions), near
+duplicates at 0.8 (count of instructions with a partner), and all 276 pairwise exact 5-gram
+Jaccard values, summarised by minimum, median, maximum, histogram and the count at or above 0.8.
+No threshold is chosen for "templated". The Jaccard distribution is the description. Instructions
+are 3 to 25 words, so a 5-gram shingle is a large part of a short instruction. A near-duplicate
+count of zero is expected and is reported as a null result, not as evidence that the tasks are
+distinct.
+
+**Provenance.** Each result records, for each sibling: its git commit, whether its working tree
+has uncommitted changes, and the changed paths. It also records a SHA-256 of each input file
+(committed subsets, task files) and the item counts. No absolute path is written to any result.
+
+**Stop rules.** The thresholds above are not changed after the run. A missing ID, a failed load or
+a missing sibling checkout fails the run with an error (recorded, not dropped). A null result is
+reported in the README and the headline as a null result.
+
