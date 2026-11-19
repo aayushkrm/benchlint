@@ -350,7 +350,7 @@ See `AGENTS.md` for layout, invariants and conventions. `schemas/audit_report.sc
 
 ## How this was built
 
-This project was built with AI coding assistants (Claude Code, with models from the Claude family). The design, the pre-registered experiments and the final review are the author's. Each design choice is recorded with its reason in `docs/design.md` and `docs/deviations.md`. Results are generated from committed JSON, not typed by hand.
+This repository was designed, coded, tested and documented by AI coding assistants (Claude, run through Claude Code) working autonomously under Ayush Kumar's direction. That includes the pre-registrations, the experiments and this write-up. A separate AI reviewer checked the code and the results (the findings and what was changed are in the commit history and `docs/deviations.md`). A line-by-line human review by the author has not been done yet, so none of this should be read as a human-audited result. Every measured number in this README is generated from the committed result files.
 
 ## Citation
 
