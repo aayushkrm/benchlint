@@ -72,4 +72,4 @@ What each check can and cannot show. Read before quoting a finding.
   one in the cited paper, so the comparison is about shortcut strength, not a replication.
 - E4 covers small sibling inputs (300, 100 and 24 items). It is dogfooding, not a benchmark
   result, and its null result says only what these inputs contain under these checks.
-- The E1 and E3 results come from working trees with uncommitted changes. The provenance table in the README and `docs/deviations.md` say which files, and what the recorded commit does and does not reproduce.
+- The E1 and E3 records are dirty (`git_dirty` true) with no digest and no path list. `docs/deviations.md` names the files that the git history shows were uncommitted, and says what the recorded commit does and does not reproduce.

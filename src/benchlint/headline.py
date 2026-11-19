@@ -7,7 +7,9 @@ left out, so an empty results folder gives an empty item list that still validat
 
 Selection rule for E3 (deterministic): for each benchmark, the cross-split exact or near finding
 with the highest count (ties: higher rate, then exact before near). Across benchmarks, the two
-largest count (ties: higher rate, then benchmark name). The top item is featured.
+largest count (ties: higher rate, then benchmark name). Exactly three items are featured
+(FEATURED_IDS): the E1 LSH recall, the E2 SNLI item and the top E3 item, which is what the
+hub shows.
 """
 
 from __future__ import annotations
@@ -30,6 +32,8 @@ TOOL = "benchlint"
 MAX_ITEMS = 6
 E3_ITEMS = 1
 E4_ITEMS = 1
+FEATURED_IDS = ("e1_lsh_recall", "e2_snli", "e3_imdb_cross_near")
+"""The hub shows at most three featured items, in this order. Exactly these are featured."""
 TAGLINE = (
     "A linter for ML benchmarks: finds train/test leakage, near-duplicates, label conflicts "
     "and shortcut features before you trust a score."
@@ -113,7 +117,7 @@ def _e1_items(results_dir: Path) -> list[dict[str, Any]]:
                 "n": lsh["n"],
                 "ci": f"[{pct(lsh['ci_low'])}, {pct(lsh['ci_high'])}]",
                 "synthetic": True,
-                "featured": True,
+                "featured": True,  # the hub shows three featured items; see FEATURED_IDS
                 "source": "results/e1/summary.json",
             }
         )
@@ -135,7 +139,7 @@ def _e1_items(results_dir: Path) -> list[dict[str, Any]]:
                     "n": row["n"],
                     "ci": f"[{pct(row['ci_low'])}, {pct(row['ci_high'])}]",
                     "synthetic": True,
-                    "featured": True,
+                    "featured": False,
                     "source": "results/e1/calibration.json",
                 }
             )
@@ -166,7 +170,7 @@ def _e2_items(results_dir: Path) -> list[dict[str, Any]]:
                 "n": r["n_eval"],
                 "ci": f"[{pct(acc['ci_low'])}, {pct(acc['ci_high'])}]",
                 "synthetic": False,
-                "featured": True,
+                "featured": name == "snli",
                 "source": f"results/e2/{name}.json",
             }
         )

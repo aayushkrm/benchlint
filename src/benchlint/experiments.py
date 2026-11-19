@@ -397,9 +397,10 @@ def calibration_tables(
                 ),
             ),
             note=(
-                f"Random pairs of clean controls, flagged at threshold {threshold}. Random pairs "
-                "are almost never near-duplicates, so this is a weak test of false positives. No "
-                "hard-negative rate (same-topic or templated pairs) has been measured."
+                f"Random pairs of clean controls, flagged at threshold {threshold}. Zero flags among "
+                "random pairs says little about precision: random pairs are almost never "
+                "near-duplicates, and E1 has no hard-negative set (same-topic or templated pairs), "
+                "so no false-positive rate for hard negatives has been measured."
             ),
         ),
         Table(
@@ -832,15 +833,19 @@ def _provenance_row(name: str, env: dict[str, Any] | None) -> tuple[str, ...]:
     elif dirty is False:
         state = "clean tree (no uncommitted changes outside results/)"
     else:
+        # Say what env.json records: git_dirty true is the only fact for runs made before the
+        # path list and the digest existed. The uncommitted files are not named in the record.
         paths = env.get("git_dirty_paths")
         if paths is None:
-            state = "uncommitted changes; the paths were not recorded (envinfo before the change)"
+            state = "dirty (git_dirty true); no path list recorded"
         else:
             shown = ", ".join(paths[:5]) + (" and more" if len(paths) > 5 else "")
             state = f"uncommitted changes: {shown}"
     digest = env.get("git_diff_sha256")
     if digest:
         state += f"; diff hash {str(digest)[:12]}"
+    elif dirty:
+        state += "; no digest recorded"
     return (name, commit, state, str(env.get("utc_time") or "n/a"))
 
 
@@ -851,8 +856,10 @@ def provenance_table(envs: Sequence[tuple[str, dict[str, Any] | None]]) -> Table
         headers=("Experiment", "Commit", "Working tree at run", "Recorded (UTC)"),
         rows=tuple(_provenance_row(name, env) for name, env in envs),
         note=(
-            "Each row is read from that experiment's env.json. A run from a dirty tree is not "
-            "reproducible from the commit alone. The code differences are in docs/deviations.md."
+            "Each row is read from that experiment's env.json, and the wording follows what "
+            "that file records. A dirty run is not reproducible from the commit alone. Where the "
+            "record has no path list, the uncommitted files are identified from the git history "
+            "in docs/deviations.md, not from the record."
         ),
     )
 

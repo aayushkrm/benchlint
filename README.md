@@ -2,7 +2,7 @@
 
 A linter for ML benchmarks. It finds train/test leakage, exact and near-duplicates, label conflicts, n-gram contamination and shortcut features before you trust a benchmark score.
 
-> **Status: v0.1.0 candidate with committed results.** E1 (detector calibration), E2 (hypothesis-only replication) and E3 (leakage scan) are full-mode runs, rendered below. The provenance table at the end of the findings section gives each run's commit and working-tree state. E1 and E3 come from working trees with uncommitted changes; E2 was re-run from a clean tree. **E4 (dogfooding on the sibling projects' inputs) has been run; its result is a null result for near duplicates.** Nothing is published (no GitHub repository, no release, no Pages site) until the author confirms.
+> **Status: v0.1.0 candidate with committed results.** E1 (detector calibration), E2 (hypothesis-only replication) and E3 (leakage scan) are full-mode runs, rendered below. The provenance table at the end of the findings section gives each run's commit and working-tree state. E1 and E3 are recorded as dirty (`git_dirty` true) with no digest and no path list; E2 was re-run from a clean tree. **E4 (dogfooding on the sibling projects' inputs) has been run; its result is a null result for near duplicates.** Nothing is published (no GitHub repository, no release, no Pages site) until the author confirms.
 
 ## Why
 
@@ -67,8 +67,8 @@ Specs are YAML. An AuditSpec has a `dataset:` mapping (source, text and label fi
   MNLI value was first entered as an approximation; the first E2 render showed it, and the
   corrected value replaced it (see the E2 entry in `docs/deviations.md`).
 - **Working trees.** The provenance table at the end of the findings section gives each run's
-  commit and working-tree state, read from its own `env.json`. E1 and E3 were run from working
-  trees with uncommitted changes; the deviations entries name the files and the commits. E2 was
+  commit and working-tree state, read from its own `env.json`. E1 and E3 are recorded as dirty
+  (`git_dirty` true) with no digest and no path list. The deviations entries name the files that the git history shows were uncommitted at the time; the records themselves do not. E2 was
   re-run from a clean tree after the literature correction.
 - **Data.** Results depend on the Hugging Face Hub versions served at run time. The spec files
   name each dataset, config and split.
@@ -168,7 +168,7 @@ With 5-word shingles, a text of n words has S = n - 4 shingles. One word edit ch
 |---|---|---|
 | 10000 | 0 | 0.00% [0.00%, 0.04%] |
 
-Random pairs of clean controls, flagged at threshold 0.8. Random pairs are almost never near-duplicates, so this is a weak test of false positives. No hard-negative rate (same-topic or templated pairs) has been measured.
+Random pairs of clean controls, flagged at threshold 0.8. Zero flags among random pairs says little about precision: random pairs are almost never near-duplicates, and E1 has no hard-negative set (same-topic or templated pairs), so no false-positive rate for hard negatives has been measured.
 
 ### E1 recall by text length (found / planted)
 
@@ -281,12 +281,12 @@ Within the set. Instructions are 3 to 25 words, so a 5-gram shingle is a large p
 
 | Experiment | Commit | Working tree at run | Recorded (UTC) |
 |---|---|---|---|
-| E1 | 6172c97baf | uncommitted changes; the paths were not recorded (envinfo before the change) | 2026-11-18T20:19:46+00:00 |
+| E1 | 6172c97baf | dirty (git_dirty true); no path list recorded; no digest recorded | 2026-11-18T20:19:46+00:00 |
 | E2 | 0dc2ff2f1b | clean tree (no uncommitted changes outside results/); diff hash f3188c9bb48b | 2026-11-18T22:40:28+00:00 |
-| E3 | b0eddc1f07 | uncommitted changes; the paths were not recorded (envinfo before the change) | 2026-11-18T20:44:18+00:00 |
+| E3 | b0eddc1f07 | dirty (git_dirty true); no path list recorded; no digest recorded | 2026-11-18T20:44:18+00:00 |
 | E4 | c443d8ef0e | clean tree (no uncommitted changes outside results/); diff hash f3188c9bb48b | 2026-11-19T03:59:46+00:00 |
 
-Each row is read from that experiment's env.json. A run from a dirty tree is not reproducible from the commit alone. The code differences are in docs/deviations.md.
+Each row is read from that experiment's env.json, and the wording follows what that file records. A dirty run is not reproducible from the commit alone. Where the record has no path list, the uncommitted files are identified from the git history in docs/deviations.md, not from the record.
 <!-- results:end -->
 
 Literature values in E2 are taken from Table 2 of Gururangan et al. (2018), arXiv:1803.02324, and were checked against it; they are cited, not our measurements. Each rate in E3 is a count of matched items, not a claim about the benchmark's validity. The E3 scope column separates cross-split counts from within-split counts.

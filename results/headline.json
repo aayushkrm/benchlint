@@ -15,7 +15,7 @@
     {
       "ci": "[1.7%, 5.4%]",
       "detail": "Share of all planted near-duplicates in the shortest length bin that were found, across all edit types and sizes. Low by arithmetic: one word edit changes up to five 5-gram shingles, so short texts fall below the reporting threshold (README, docs/limitations.md).",
-      "featured": true,
+      "featured": false,
       "id": "e1_short_texts",
       "label": "E1 detector recall, short texts (under 34 words), all edits",
       "n": 356,
@@ -37,7 +37,7 @@
     {
       "ci": "[50.9%, 52.9%]",
       "detail": "Hypothesis-only TF-IDF and logistic regression, train capped at 100000 rows, majority baseline 31.8%. Gap -2.0 points against the literature value, which is cited as reported (Gururangan et al. 2018, NAACL, Table 2) and not measured here.",
-      "featured": true,
+      "featured": false,
       "id": "e2_mnli",
       "label": "E2 MNLI matched dev hypothesis-only accuracy vs literature",
       "n": 9815,
